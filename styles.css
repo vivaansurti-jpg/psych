@@ -32,6 +32,26 @@
   --base: 200ms;
 }
 
+html { color-scheme: light; }
+
+/* The theme is expressed entirely through the shared colour tokens, so every
+   page and component inherits it without needing page-specific overrides. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --ink:         #f3eff8;
+  --ink-2:       #d4cddd;
+  --muted:       #afa6bb;
+  --faint:       #9a91a6;
+  --line:        #37303f;
+  --line-2:      #28222f;
+  --line-3:      #4b4154;
+  --canvas:      #16121a;
+  --surface:     #201b25;
+  --violet:      #c9a8ff;
+  --violet-2:    #b58af7;
+  --violet-soft: #35264b;
+}
+
 /* ---------- reset ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -381,6 +401,20 @@ h1.page-title {
 .footer a:hover { color: var(--ink-2); }
 .footer-links { display: flex; gap: 14px; flex-wrap: wrap; }
 
+/* ---------- theme switcher ---------- */
+.theme-toggle {
+  position: fixed; right: 22px; bottom: 22px; z-index: 50;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; padding: 0; border-radius: 999px;
+  border: 1px solid var(--line-3); background: var(--surface); color: var(--ink);
+  box-shadow: 0 8px 24px -14px rgba(23,21,28,.7); cursor: pointer;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease),
+              color var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+.theme-toggle:hover { background: var(--line-2); border-color: var(--violet); color: var(--violet); }
+.theme-toggle:active { transform: scale(.94); }
+.theme-toggle svg { width: 19px; height: 19px; }
+
 /* ---------- page enter ---------- */
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
 main { flex: 1 0 auto; animation: rise 300ms var(--ease) both; }
@@ -459,6 +493,7 @@ main { flex: 1 0 auto; animation: rise 300ms var(--ease) both; }
 
   .prompt-text { font-size: .765rem; max-height: 62vh; }
   .footer { padding-block: 16px 24px; }
+  .theme-toggle { right: 16px; bottom: 16px; }
 }
 
 /* ---------- accessibility preferences ---------- */
@@ -470,6 +505,7 @@ main { flex: 1 0 auto; animation: rise 300ms var(--ease) both; }
 }
 @media (prefers-contrast: more) {
   :root { --line: #c6bed4; --line-3: #9b91ad; --faint: #59536a; --muted: #4f4960; }
+  html[data-theme="dark"] { --line: #70637b; --line-3: #93839f; --faint: #c2b7cb; --muted: #d2c7db; }
   .item, .btn, .filter-btn, .search-field input { border-width: 1.5px; }
 }
 @media print {

@@ -27,6 +27,39 @@
   const field = (label, body) =>
     '<div class="field"><div class="field-label">' + label + '</div>' + body + '</div>';
 
+  /* ---------- colour theme ---------- */
+  function initTheme() {
+    const root = document.documentElement;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'theme-toggle';
+    button.setAttribute('aria-pressed', root.dataset.theme === 'dark' ? 'true' : 'false');
+    button.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6.75 6.75 0 1 0 9 9A7.5 7.5 0 1 1 12 3Z"></path></svg>' +
+      '<span class="sr-only"></span>';
+
+    function render() {
+      const dark = root.dataset.theme === 'dark';
+      const label = dark ? 'Switch to light mode' : 'Switch to dark mode';
+      const icon = $('.theme-toggle svg', button);
+      icon.innerHTML = dark
+        ? '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>'
+        : '<path d="M12 3a6.75 6.75 0 1 0 9 9A7.5 7.5 0 1 1 12 3Z"></path>';
+      button.setAttribute('aria-label', label);
+      button.setAttribute('title', label);
+      button.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      $('.sr-only', button).textContent = label;
+    }
+
+    button.addEventListener('click', () => {
+      root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem('psych-theme', root.dataset.theme); } catch (err) {}
+      render();
+    });
+    document.body.appendChild(button);
+    render();
+  }
+
   /* ---------- disclosure cards (event-delegated) ---------- */
   function wireDisclosure(listEl) {
     listEl.addEventListener('click', (e) => {
@@ -599,6 +632,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     initMobileNav();
     initNotes();
     initQuestions();
