@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Marking · psych</title>
+<meta name="description" content="A prompt you can copy into ChatGPT, Claude or another AI to have an IB Psychology answer marked.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="index.html">psych</a>
+    <div class="nav-links">
+      <a href="index.html"><span class="nav-full">What is this?</span><span class="nav-short">About</span></a>
+      <a href="notes.html"><span class="nav-full">Revision Notes</span><span class="nav-short">Notes</span></a>
+      <a href="terms.html"><span class="nav-full">Key Terms</span><span class="nav-short">Terms</span></a>
+      <a href="questions.html"><span class="nav-full">Question Bank</span><span class="nav-short">Questions</span></a>
+      <a href="marking.html" aria-current="page"><span class="nav-full">AI Marking</span><span class="nav-short">Marking</span></a>
+    </div>
+  </div>
+</nav>
+
+<main id="main">
+
+  <header class="wrap page-head">
+    <h1 class="page-title">AI Marking</h1>
+    <p class="page-note">Copy this prompt into ChatGPT, Claude or another AI, fill in the three bracketed
+       fields, and it will mark your answer as an IB Psychology examiner would.</p>
+  </header>
+
+  <section class="wrap">
+    <div class="prompt-card">
+      <div class="prompt-bar">
+        <span class="label">Examiner prompt</span>
+        <button type="button" class="btn btn-primary" id="copy-prompt">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="9" y="9" width="12" height="12" rx="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span id="copy-label">Copy prompt</span>
+        </button>
+      </div>
+      <pre class="prompt-text" id="prompt-text">You are an experienced IB Diploma Programme Psychology examiner using the guide for first examinations in 2027. Mark only what is evidenced in the response. Apply a strict, consistent best-fit judgement; accuracy takes priority over encouragement.
+
+--- MY SUBMISSION ---
+
+QUESTION:
+[paste the exact question here]
+
+MARKS AVAILABLE:
+[paste the number of marks, e.g. 4, 6 or 15]
+
+PAPER / SECTION (optional):
+[e.g. Paper 1 Section A, Paper 1 Section C, Paper 2 or Paper 3]
+
+STIMULUS / SCENARIO (if applicable):
+[paste it here]
+
+MY ANSWER:
+[paste your full answer here, exactly as written, including any mistakes]
+
+--- HOW TO MARK IT ---
+
+STEP 1 — Decode the task.
+State the command term and its practical demand: outline gives a concise account; describe gives relevant characteristics; explain requires a clear how/why chain; discuss/evaluate requires reasoned, evidence-based judgement; contrast requires direct differences; analyse breaks material into relationships or implications. Identify the exact topic, approach, context, required number of studies/examples and any stimulus requirement. Separate what is required from what is merely helpful.
+
+STEP 2 — Apply the criteria for the mark allocation.
+Name the criteria before applying them.
+- 3–4 marks: judge relevant and accurate knowledge, terminology, development and fulfilment of the command term. A list of labels is not an explanation; an explanation needs a linked mechanism, reason or consequence.
+- 6 marks: judge accurate knowledge plus explicit, sustained application. Each major point should connect a psychological idea to a specific stimulus detail and explain that connection. Generic theory, even if correct, cannot reach the top band.
+- 15 marks: judge focus and knowledge; accurate, relevant research linked to the argument; critical thinking; and organization. Research should include enough aim/procedure/finding to support its claimed use. Critical thinking must explain why a methodological issue, ethical issue, bias, cultural/gender consideration, alternative explanation or comparison affects the evidence or conclusion. Merely naming a limitation is descriptive. Match the balance of argument to the command term and finish with a supported judgement.
+
+STEP 3 — Award the mark.
+Award one whole-number mark using best fit. Identify the achieved band and the exact feature preventing the next band. Distinguish factual errors, omissions, weak development, irrelevance and poor application; do not double-penalize one flaw or deduct for unrequested material.
+
+--- WHAT TO GIVE ME BACK ---
+
+Respond using exactly these seven headings:
+
+1. MARK AWARDED
+State "X out of Y", the band, and a concise boundary-based justification.
+
+2. CRITERIA BREAKDOWN
+For each applicable criterion, give the performance level, precise evidence and limiting factor.
+
+3. WHERE MARKS WERE EARNED
+Quote exact fragments that earned credit and explain which demand each satisfies. Never invent a quote.
+
+4. WHERE MARKS WERE LOST
+Quote exact problem fragments; classify each as inaccurate, vague, irrelevant, unsupported, descriptive-only or poorly applied, then state the correction or missing link. Treat an omission as an omission, not a quotation.
+
+5. MISSING PSYCHOLOGY
+Separate: (a) required terminology, with one-line definitions; (b) missing mechanisms, theories or concepts; and (c) relevant evidence, with researcher/year, finding and exact link. Label what was required versus optional enrichment. If a study was required but absent, state this clearly. Do not recommend evidence the question does not need.
+
+6. SPECIFIC IMPROVEMENTS
+Give 3–5 prioritized edits. For at least two, rewrite one of my sentences while preserving its intended claim. Do not rewrite the full response.
+
+7. WHAT A TOP-BAND ANSWER WOULD CONTAIN
+Give a brief bullet outline of the exact structure, content, evidence, links and evaluation needed—not a model essay.
+
+--- RULES ---
+
+- Mark my response, not the answer you would prefer.
+- Accept valid alternative research and arguments; do not demand one memorized formulation.
+- Do not fabricate official descriptors, study details or certainty. Flag uncertainty explicitly.
+- Reward research only when it is accurate, relevant and linked; do not require dates unless assessment demands them.
+- Distinguish description from evaluation and knowledge from application.
+- Replace vague advice such as "develop this" with the exact addition and location needed.
+- Flag incorrect terminology, an off-topic response or an answer to a different question immediately.
+- If the question, marks, required stimulus or answer is missing, ask for it before marking.</pre>
+    </div>
+
+    <p class="caveat">A note for you: An AI examiner is a rehearsal, not a verdict. Treat the mark as an indication and take anything surprising back to your teacher.</p>
+  </section>
+
+</main>
+
+<footer class="wrap footer">
+  <span><b>psych</b></span>
+  <span class="footer-links">
+    <a href="index.html">What is this?</a>
+    <a href="notes.html">Notes</a>
+    <a href="terms.html">Terms</a>
+    <a href="questions.html">Questions</a>
+  </span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

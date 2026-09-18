@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Question Bank · psych</title>
+<meta name="description" content="IB Psychology exam-style questions, filterable by topic, approach and marks.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="index.html">psych</a>
+    <div class="nav-links">
+      <a href="index.html"><span class="nav-full">What is this?</span><span class="nav-short">About</span></a>
+      <a href="notes.html"><span class="nav-full">Revision Notes</span><span class="nav-short">Notes</span></a>
+      <a href="terms.html"><span class="nav-full">Key Terms</span><span class="nav-short">Terms</span></a>
+      <a href="questions.html" aria-current="page"><span class="nav-full">Question Bank</span><span class="nav-short">Questions</span></a>
+      <a href="marking.html"><span class="nav-full">AI Marking</span><span class="nav-short">Marking</span></a>
+    </div>
+  </div>
+</nav>
+
+<main id="main">
+
+  <header class="wrap page-head">
+    <h1 class="page-title">Question Bank</h1>
+    <p class="page-note">Marks shown as <em>Est.</em> are estimated from the command term.</p>
+  </header>
+
+  <div class="controls wrap">
+    <div class="search-field">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle><line x1="20.5" y1="20.5" x2="16.65" y2="16.65"></line>
+      </svg>
+      <label class="sr-only" for="q-search">Search questions</label>
+      <input type="search" id="q-search" placeholder="Search questions" autocomplete="off">
+      <button type="button" class="search-clear" id="q-search-clear" hidden aria-label="Clear search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="control-row">
+      <div class="filter-wrap">
+        <button type="button" class="filter-btn" id="q-filter-btn"
+                aria-expanded="false" aria-haspopup="true" aria-controls="q-filter-panel">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <line x1="3" y1="7" x2="21" y2="7"></line><line x1="6" y1="12" x2="18" y2="12"></line><line x1="10" y1="17" x2="14" y2="17"></line>
+          </svg>
+          Filter
+          <span class="filter-count" id="q-filter-count" hidden></span>
+          <svg class="caret" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+
+        <div class="filter-panel" id="q-filter-panel" hidden role="dialog" aria-label="Filter questions">
+        <div class="fgroup" role="group" aria-label="Topic">
+          <p class="fgroup-title">Topic</p>
+          <button type="button" class="fopt" data-group="topic" data-value="all" data-label="All" aria-pressed="true"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">All</span><span class="count" aria-hidden="true">121</span></button>
+          <button type="button" class="fopt" data-group="topic" data-value="development" data-label="Human Development" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Human Development</span><span class="count" aria-hidden="true">1</span></button>
+          <button type="button" class="fopt" data-group="topic" data-value="relationships" data-label="Human Relationships" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Human Relationships</span><span class="count" aria-hidden="true">2</span></button>
+          <button type="button" class="fopt" data-group="topic" data-value="learning" data-label="Learning and Cognition" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Learning and Cognition</span><span class="count" aria-hidden="true">2</span></button>
+          <button type="button" class="fopt" data-group="topic" data-value="core" data-label="Core Approach Content" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Core Approach Content</span><span class="count" aria-hidden="true">78</span></button>
+          <button type="button" class="fopt" data-group="topic" data-value="methods" data-label="Research Methods" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Research Methods</span><span class="count" aria-hidden="true">37</span></button>
+        </div>
+        <div class="fgroup" role="group" aria-label="Approach">
+          <p class="fgroup-title">Approach</p>
+          <button type="button" class="fopt" data-group="approach" data-value="all" data-label="All" aria-pressed="true"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">All</span><span class="count" aria-hidden="true">121</span></button>
+          <button type="button" class="fopt" data-group="approach" data-value="biological" data-label="Biological" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Biological</span><span class="count" aria-hidden="true">37</span></button>
+          <button type="button" class="fopt" data-group="approach" data-value="cognitive" data-label="Cognitive" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Cognitive</span><span class="count" aria-hidden="true">29</span></button>
+          <button type="button" class="fopt" data-group="approach" data-value="sociocultural" data-label="Sociocultural" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Sociocultural</span><span class="count" aria-hidden="true">17</span></button>
+          <button type="button" class="fopt" data-group="approach" data-value="methods" data-label="Research Methods" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Research Methods</span><span class="count" aria-hidden="true">37</span></button>
+        </div>
+        <div class="fgroup" role="group" aria-label="Marks">
+          <p class="fgroup-title">Marks</p>
+          <button type="button" class="fopt" data-group="marks" data-value="all" data-label="All" aria-pressed="true"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">All</span><span class="count" aria-hidden="true">121</span></button>
+          <button type="button" class="fopt" data-group="marks" data-value="3" data-label="3 marks" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">3 marks</span><span class="count" aria-hidden="true">1</span></button>
+          <button type="button" class="fopt" data-group="marks" data-value="4" data-label="4 marks" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">4 marks</span><span class="count" aria-hidden="true">73</span></button>
+          <button type="button" class="fopt" data-group="marks" data-value="6" data-label="6 marks" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">6 marks</span><span class="count" aria-hidden="true">10</span></button>
+          <button type="button" class="fopt" data-group="marks" data-value="15" data-label="15 marks" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">15 marks</span><span class="count" aria-hidden="true">37</span></button>
+        </div>
+          <div class="fpanel-foot">
+            <button type="button" class="text-btn" id="q-reset" hidden>Clear filters</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="active-filters" id="q-active" hidden></p>
+      <p class="result-count" id="q-count">121 questions</p>
+      <p class="sr-only" id="q-live" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="list" id="q-list"></div>
+    <div class="empty" id="q-empty" hidden>
+      <h2>Nothing matches</h2>
+      <p>Try a different filter, or clear the search.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer class="wrap footer">
+  <span><b>psych</b></span>
+  <span class="footer-links">
+    <a href="index.html">What is this?</a>
+    <a href="notes.html">Notes</a>
+    <a href="terms.html">Terms</a>
+    <a href="marking.html">Marking</a>
+  </span>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
