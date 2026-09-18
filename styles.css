@@ -86,6 +86,7 @@ a { color: inherit; }
 .nav-links a:hover { color: var(--ink); background: var(--line-2); }
 .nav-links a[aria-current="page"] { color: var(--violet); background: var(--violet-soft); }
 .nav-short { display: none; }
+.violet-text { color: var(--violet); }
 
 /* ---------- headings ---------- */
 h1.page-title {
