@@ -567,7 +567,39 @@
     });
   }
 
+  /* ---------- mobile navigation ---------- */
+  function initMobileNav() {
+    const nav = $('.nav');
+    const toggle = $('.nav-toggle', nav);
+    const links = $('.nav-links', nav);
+    if (!nav || !toggle || !links) return;
+
+    function setOpen(open, refocus) {
+      nav.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+      if (refocus) toggle.focus();
+    }
+
+    toggle.addEventListener('click', () => {
+      setOpen(!nav.classList.contains('is-open'), false);
+    });
+    links.addEventListener('click', (e) => {
+      if (e.target.closest('a')) setOpen(false, false);
+    });
+    document.addEventListener('click', (e) => {
+      if (nav.classList.contains('is-open') && !nav.contains(e.target)) setOpen(false, false);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && nav.classList.contains('is-open')) setOpen(false, true);
+    });
+    window.matchMedia('(min-width: 681px)').addEventListener('change', (e) => {
+      if (e.matches) setOpen(false, false);
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    initMobileNav();
     initNotes();
     initQuestions();
     initTerms();
