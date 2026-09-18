@@ -366,6 +366,10 @@ h1.page-title {
   color: var(--muted); max-width: 60ch;
 }
 
+@media (min-width: 681px) {
+  .caveat { max-width: none; }
+}
+
 /* ---------- footer ---------- */
 .footer {
   border-top: 1px solid var(--line); padding-block: 18px 26px;
