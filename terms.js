@@ -1,15 +1,9 @@
-/* Key terms for the seven concepts, taken from the IB Psychology guide
+/* Key terms for the six course concepts, taken from the IB Psychology guide
    (first assessment 2027): the related-terms list given for each concept,
    the wording of each concept's explanation, and the guide's glossary of
    subject-specific terms. */
 
 const CONCEPTS = [
- {
-  "id": "concepts",
-  "name": "Concepts",
-  "blurb": "Concepts are broad, generic ideas that show up in many different areas of content and context. In DP psychology they are bias, causality, change, measurement, perspective and responsibility.",
-  "terms": ["conceptual-understanding", "content", "context", "related-terms", "critical-thinking", "transfer-skills", "synthesis", "psychological-literacy"]
- },
  {
   "id": "bias",
   "name": "Bias",
@@ -53,39 +47,6 @@ const TERMS = {
   "term": "Concept",
   "def": "An organizing idea with distinct attributes that are shared across multiple areas. In DP psychology the concepts are bias, causality, change, measurement, perspective and responsibility."
  },
- "conceptual-understanding": {
-  "term": "Conceptual understanding",
-  "def": "Comprehension of the underlying principles and connections of a theory, model or idea, beyond mere memorization."
- },
- "content": {
-  "term": "Content",
-  "def": "What is studied: the biological, cognitive and sociocultural approaches and the research methodology used to understand human behaviour. It is through content that concepts come alive and gain their explanatory power."
- },
- "context": {
-  "term": "Context",
-  "def": "The circumstances, events and settings that give relevance to learning and information. In DP psychology the contexts are health and wellness, human development, human relationships, and learning and cognition."
- },
- "related-terms": {
-  "term": "Related terms",
-  "def": "The terms the guide lists under each concept. They are guidance rather than a required vocabulary list: the list is not exhaustive and will not be used to set concept-based questions, and other terms are accepted as long as the link is relevant, explained and clearly justified."
- },
- "critical-thinking": {
-  "term": "Critical thinking",
-  "def": "Analysing, evaluating and synthesizing information and arguments to make reasoned and informed judgements or decisions."
- },
- "transfer-skills": {
-  "term": "Transfer skills",
-  "def": "The ability to apply knowledge and understanding gained in one situation or context to another, unfamiliar situation."
- },
- "synthesis": {
-  "term": "Synthesis",
-  "def": "Combining different pieces of information or ideas into a new, integrated understanding, often to generate new insights or theories."
- },
- "psychological-literacy": {
-  "term": "Psychological literacy",
-  "def": "Understanding psychology and applying problem-solving skills and psychological principles to real-life problems in different contexts. It includes acting ethically, thinking critically, cultural competence and self-awareness."
- },
-
  "bias": {
   "term": "Bias",
   "def": "A limitation in objective thinking: a tendency to perceive information through a cognitive filter of experience and preference. Bias can be implicit or explicit, and it matters not just to recognise it but to understand how it affects the way research is conducted, analysed and interpreted."
