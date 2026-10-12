@@ -659,6 +659,19 @@
       if (n.backup)       body += field('Backup study', '<p>' + esc(n.backup) + '</p>');
       if (n.advantage)    body += field('Strength', '<p>' + esc(n.advantage) + '</p>');
       if (n.disadvantage) body += field('Limitation', '<p>' + esc(n.disadvantage) + '</p>');
+      if (typeof GRID_CONTEXTS !== 'undefined') {
+        const lines = [];
+        GRID_CONTEXTS.forEach((ctx) => ctx.groups.forEach((g) => g.topics.forEach((t) => {
+          if ((t.notes || []).indexOf(n.id) === -1) return;
+          const links = CONCEPTS_ORDER.filter((c) => GRID_ANGLES[t.id + ':' + c[0]]).map((c) =>
+            '<a href="terms.html#angle=' + esc(t.id + ':' + c[0]) + '">' + esc(c[1]) + '</a>');
+          if (links.length) {
+            lines.push('<p class="note-angles"><span class="note-angles-topic">' + esc(t.name) + '</span>' +
+              links.join(SEP) + '</p>');
+          }
+        })));
+        if (lines.length) body += field('Concept angles for Paper 1C', lines.join(''));
+      }
       body += '<p class="item-meta body-meta">' + esc(APPROACH_LABELS[n.approach]) + SEP +
               esc(TOPIC_LABELS[n.topic]) + '</p>';
 
@@ -742,144 +755,309 @@
     });
   }
 
-  /* ---------- key terms ---------- */
-  function initTerms() {
+  const CONCEPTS_ORDER = [['bias', 'Bias'], ['causality', 'Causality'], ['change', 'Change'],
+    ['measurement', 'Measurement'], ['perspective', 'Perspective'], ['responsibility', 'Responsibility']];
+
+  /* ---------- concepts page: grid + key terms ---------- */
+  const CONCEPT_QUESTIONS = {
+    bias:           (p) => 'Evaluate possible sources of bias in research on ' + p + '.',
+    causality:      (p) => 'To what extent can causal conclusions be drawn about ' + p + '?',
+    change:         (p) => 'Discuss the role of change in relation to ' + p + '.',
+    measurement:    (p) => 'Discuss challenges of measurement in research on ' + p + '.',
+    perspective:    (p) => 'Evaluate ' + p + ' with reference to more than one perspective.',
+    responsibility: (p) => 'Discuss ethical considerations in research on ' + p + '.'
+  };
+
+  function initConcepts() {
+    const gridEl = $('#cgrid');
     const listEl = $('#terms-list');
-    if (!listEl || typeof CONCEPTS === 'undefined') return;
+    if (!gridEl || !listEl || typeof CONCEPTS === 'undefined' || typeof GRID_CONTEXTS === 'undefined') return;
 
-    const searchEl = $('#terms-search');
-    const clearEl  = $('#terms-search-clear');
-    const emptyEl  = $('#terms-empty');
-    const liveEl   = $('#terms-live');
-    const countEl  = $('#terms-count');
-    const filterBtn = $('#terms-filter-btn');
-    const filterPanel = $('#terms-filter-panel');
-    const filterBadge = $('#terms-filter-count');
-    const activeEl = $('#terms-active');
+    const store = {
+      get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    };
+    const conceptById = {};
+    CONCEPTS.forEach((c) => { conceptById[c.id] = c; });
+    const topicById = {};
+    GRID_CONTEXTS.forEach((ctx) => ctx.groups.forEach((g) => g.topics.forEach((t) => {
+      topicById[t.id] = { topic: t, ctx: ctx };
+    })));
 
-    // Rendered once; searching only flips `hidden` on rows and sections.
-    listEl.innerHTML = CONCEPTS.map((c) =>
-      '<section class="terms-group">' +
-        '<h2 class="terms-heading">' + esc(c.name) + '</h2>' +
-        '<p class="terms-blurb">' + esc(c.blurb) + '</p>' +
-        '<div class="terms">' +
-          c.terms.map((id) => {
-            const t = TERMS[id];
-            const bodyId = c.id + '-' + id + '-body';
-            return '<article class="term item">' +
-              '<button type="button" class="item-head term-head" aria-expanded="false" aria-controls="' + esc(bodyId) + '">' +
-                '<span class="item-main"><span class="item-title">' + esc(t.term) + '</span></span>' +
-                CHEVRON +
-              '</button>' +
-              '<div class="item-body" id="' + esc(bodyId) + '"><div class="inner">' +
-                '<div class="body-pad"><p class="term-definition">' + esc(t.def) + '</p></div>' +
-              '</div></div>' +
-            '</article>';
-          }).join('') +
-        '</div>' +
-      '</section>').join('');
-
-    const groups = $$('.terms-group', listEl).map((el, i) => ({
-      el: el,
-      id: CONCEPTS[i].id,
-      name: CONCEPTS[i].name,
-      shown: true,
-      rows: $$('.term', el).map((rowEl, j) => {
-        const t = TERMS[CONCEPTS[i].terms[j]];
-        return { el: rowEl, shown: true, s: norm(CONCEPTS[i].name + ' ' + t.term + ' ' + t.def) };
-      })
-    }));
-
-    const total = groups.reduce((sum, group) => sum + group.rows.length, 0);
-    const filterOptions = $$('[data-concept]', filterPanel);
-    const popover = wirePopover(filterBtn, filterPanel);
-    wireDisclosure(listEl);
-    let terms = [], selectedConcept = 'all', lastVisible = -1, liveTimer = null;
-
-    function matches(row) {
-      for (let i = 0; i < terms.length; i++) {
-        if (row.s.indexOf(terms[i]) === -1) return false;
-      }
-      return true;
+    /* ---- views (tabs) ---- */
+    const tabs = { grid: $('#tab-grid'), terms: $('#tab-terms') };
+    const views = { grid: $('#view-grid'), terms: $('#view-terms') };
+    let view = 'grid';
+    let gridBuilt = false;
+    function showView(name, focus) {
+      view = name;
+      if (name === 'grid' && !gridBuilt) renderGrid();
+      if (name === 'terms' && !groups) { buildTerms(); renderTerms(); }
+      Object.keys(tabs).forEach((k) => {
+        const on = k === name;
+        tabs[k].setAttribute('aria-selected', on ? 'true' : 'false');
+        tabs[k].tabIndex = on ? 0 : -1;
+        views[k].hidden = !on;
+      });
+      if (focus) tabs[name].focus();
+      store.set('psych-concepts-view', name);
     }
-
-    function render() {
-      let visible = 0;
-      for (let g = 0; g < groups.length; g++) {
-        const group = groups[g];
-        const conceptMatches = selectedConcept === 'all' || group.id === selectedConcept;
-        let anyInGroup = 0;
-        for (let r = 0; r < group.rows.length; r++) {
-          const row = group.rows[r];
-          const ok = conceptMatches && matches(row);
-          if (ok !== row.shown) { row.shown = ok; row.el.hidden = !ok; }
-          if (ok) { anyInGroup++; visible++; }
+    Object.keys(tabs).forEach((k) => {
+      tabs[k].addEventListener('click', () => { showView(k); history.replaceState(null, '', '#' + k); });
+      tabs[k].addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          showView(k === 'grid' ? 'terms' : 'grid', true);
         }
-        const groupOk = anyInGroup > 0;
-        if (groupOk !== group.shown) { group.shown = groupOk; group.el.hidden = !groupOk; }
-      }
-
-      if (visible !== lastVisible) {
-        lastVisible = visible;
-        emptyEl.hidden = visible !== 0;
-        if (countEl) {
-          countEl.textContent = visible === total
-            ? total + ' terms'
-            : visible + ' of ' + total + ' terms';
-        }
-        if (liveEl) {
-          clearTimeout(liveTimer);
-          liveTimer = setTimeout(() => {
-            liveEl.textContent = visible + (visible === 1 ? ' term shown' : ' terms shown');
-          }, 450);
-        }
-      }
-    }
-
-    filterOptions.forEach((option) => {
-      option.addEventListener('click', () => {
-        selectedConcept = option.dataset.concept;
-        filterOptions.forEach((item) => {
-          item.setAttribute('aria-pressed', item === option ? 'true' : 'false');
-        });
-        const filtered = selectedConcept !== 'all';
-        if (filterBadge) filterBadge.hidden = !filtered;
-        if (activeEl) {
-          activeEl.textContent = filtered ? option.dataset.label : '';
-          activeEl.hidden = !filtered;
-        }
-        render();
-        popover.close(false);
       });
     });
 
-    function setSearch(value) {
-      const q = norm(value);
-      terms = q ? q.split(' ') : [];
+    /* ---- grid ---- */
+    const ctxEl = $('#ctx-switch');
+    ctxEl.innerHTML = GRID_CONTEXTS.map((c) =>
+      '<button type="button" class="seg-btn" data-ctx="' + esc(c.id) + '" aria-pressed="false">' + esc(c.name) + '</button>'
+    ).join('');
+    const ctxBtns = $$('.seg-btn', ctxEl);
+    let ctxId = store.get('psych-grid-context');
+    if (!GRID_CONTEXTS.some((c) => c.id === ctxId)) ctxId = GRID_CONTEXTS[0].id;
+    let highlight = null;
+
+    function cellHTML(t, c) {
+      const a = GRID_ANGLES[t.id + ':' + c.id];
+      const label = c.name + ' × ' + t.name + (a ? ': ' + a.hook : ': general angle');
+      return '<button type="button" class="cg-cell' + (a ? '' : ' is-empty') + '"' +
+        ' data-topic="' + esc(t.id) + '" data-concept="' + esc(c.id) + '" aria-label="' + esc(label) + '">' +
+        '<span class="cg-cname" aria-hidden="true">' + esc(c.name) + '</span>' +
+        (a ? '<span class="cg-hook" aria-hidden="true"><span class="key-dot"></span>' + esc(a.hook) + '</span>'
+           : '<span class="cg-hook cg-none" aria-hidden="true">–</span>') +
+      '</button>';
     }
 
-    if (searchEl) {
-      searchEl.addEventListener('input', () => {
-        setSearch(searchEl.value);
-        if (clearEl) clearEl.hidden = searchEl.value === '';
-        render();
-      });
-      searchEl.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && searchEl.value) {
-          searchEl.value = ''; setSearch('');
-          if (clearEl) clearEl.hidden = true;
-          render();
+    function renderGrid() {
+      gridBuilt = true;
+      const ctx = GRID_CONTEXTS.find((c) => c.id === ctxId);
+      ctxBtns.forEach((b) => {
+        const on = b.dataset.ctx === ctxId;
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        if (on && ctxEl.scrollWidth > ctxEl.clientWidth) {
+          ctxEl.scrollLeft = Math.max(0, b.offsetLeft - ctxEl.clientWidth / 2 + b.offsetWidth / 2);
         }
       });
+      gridEl.innerHTML =
+        '<div class="cg-head" aria-hidden="true"><span class="cg-corner">Topic</span>' +
+          CONCEPTS.map((c) => '<span class="cg-col" data-concept="' + esc(c.id) + '">' + esc(c.name) + '</span>').join('') +
+        '</div>' +
+        ctx.groups.map((g) =>
+          '<div class="cg-group">' +
+            '<h2 class="cg-group-title">' + esc(g.name) + '</h2>' +
+            g.topics.map((t) =>
+              '<section class="cg-row">' +
+                '<h3 class="cg-topic">' + esc(t.name) + '</h3>' +
+                '<div class="cg-cells">' + CONCEPTS.map((c) => cellHTML(t, c)).join('') + '</div>' +
+              '</section>').join('') +
+          '</div>').join('');
+      applyHighlight();
     }
-    if (clearEl) {
-      clearEl.addEventListener('click', () => {
-        searchEl.value = ''; setSearch(''); clearEl.hidden = true;
-        searchEl.focus(); render();
-      });
+    function applyHighlight() {
+      $$('[data-concept]', gridEl).forEach((el) => el.classList.toggle('is-hl', el.dataset.concept === highlight));
     }
+    ctxBtns.forEach((b) => b.addEventListener('click', () => {
+      ctxId = b.dataset.ctx; store.set('psych-grid-context', ctxId); renderGrid();
+    }));
 
-    render();
+    /* ---- angle dialog ---- */
+    const dlg = $('#angle-dialog');
+    const dEyebrow = $('#angle-eyebrow'), dTitle = $('#angle-title'), dBody = $('#angle-body');
+    const dPrev = $('#angle-prev'), dNext = $('#angle-next');
+    let current = null;
+
+    function openAngle(topicId, conceptId, fromEl) {
+      const rec = topicById[topicId], c = conceptById[conceptId];
+      if (!rec || !c) return;
+      const t = rec.topic, a = GRID_ANGLES[topicId + ':' + conceptId];
+      current = { topicId: topicId, conceptId: conceptId, from: fromEl || null };
+      dEyebrow.textContent = c.name + ' × ' + t.name + ' · ' + rec.ctx.name;
+      let body = '';
+      if (a) {
+        dTitle.textContent = a.hook;
+        body += field('The angle', '<p>' + esc(a.angle) + '</p>');
+        body += field('Evidence to use', '<p>' + esc(a.use) + '</p>');
+        body += field('Counter-point', '<p>' + esc(a.but) + '</p>');
+      } else {
+        dTitle.textContent = 'Weaker link: use the general angle';
+        body += field('General angle for ' + c.name.toLowerCase(), '<p>' + esc(GRID_GENERAL[conceptId]) + '</p>');
+        body += '<p class="angle-aside">Exam setters tend to ask about combinations that matter, so this pairing is less likely. If it comes up, apply the general angle to your key study for ' + esc(t.name.toLowerCase()) + '.</p>';
+      }
+      body += field('Practice question', '<p class="angle-q">' + esc(CONCEPT_QUESTIONS[conceptId](t.phrase)) + '</p>' +
+        '<p class="angle-aside">Written in the style of Paper 1 Section C (15 marks). Not an official question.</p>');
+      const links = [];
+      (t.notes || []).forEach((id) => {
+        const title = (typeof GRID_NOTE_TITLES !== 'undefined' && GRID_NOTE_TITLES[id]) || 'Revision note';
+        links.push('<a href="notes.html#' + esc(id) + '">' + esc(title) + '</a>');
+      });
+      links.push('<a href="#terms" data-goto-terms="' + esc(conceptId) + '">Key terms for ' + esc(c.name.toLowerCase()) + '</a>');
+      body += '<p class="angle-links">' + links.join(SEP) + '</p>';
+      dBody.innerHTML = body;
+
+      const i = CONCEPTS.findIndex((x) => x.id === conceptId);
+      dPrev.hidden = i === 0; dNext.hidden = i === CONCEPTS.length - 1;
+      if (!dlg.open) dlg.showModal();
+      dlg.scrollTop = 0;
+      dTitle.tabIndex = -1;
+      dTitle.focus({ preventScroll: true });
+      history.replaceState(null, '', '#angle=' + topicId + ':' + conceptId);
+    }
+    function closeAngle() {
+      if (!dlg.open) return;
+      dlg.close();
+    }
+    dlg.addEventListener('close', () => {
+      history.replaceState(null, '', '#grid');
+      const sel = current && '.cg-cell[data-topic="' + current.topicId + '"][data-concept="' + current.conceptId + '"]';
+      const el = sel && $(sel, gridEl);
+      if (el) el.focus();
+    });
+    $('#angle-close').addEventListener('click', closeAngle);
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) closeAngle(); });
+    function step(dir) {
+      const i = CONCEPTS.findIndex((x) => x.id === current.conceptId) + dir;
+      if (i >= 0 && i < CONCEPTS.length) openAngle(current.topicId, CONCEPTS[i].id);
+    }
+    dPrev.addEventListener('click', () => step(-1));
+    dNext.addEventListener('click', () => step(1));
+    dBody.addEventListener('click', (e) => {
+      const a = e.target.closest('[data-goto-terms]');
+      if (!a) return;
+      e.preventDefault();
+      closeAngle();
+      selectConcept(a.dataset.gotoTerms);
+      showView('terms');
+      history.replaceState(null, '', '#terms');
+      window.scrollTo({ top: 0 });
+    });
+    gridEl.addEventListener('click', (e) => {
+      const cell = e.target.closest('.cg-cell');
+      if (cell) openAngle(cell.dataset.topic, cell.dataset.concept, cell);
+    });
+
+    /* ---- key terms ---- */
+    const searchEl = $('#terms-search'), clearEl = $('#terms-search-clear');
+    const emptyEl = $('#terms-empty'), liveEl = $('#terms-live'), countEl = $('#terms-count');
+    const chipsEl = $('#concept-chips');
+
+    const homes = {};   // term id -> concept names it appears under
+    CONCEPTS.forEach((c) => c.terms.forEach((id) => { (homes[id] = homes[id] || []).push(c); }));
+
+    chipsEl.innerHTML =
+      '<button type="button" class="chip" data-concept="all" aria-pressed="true">All</button>' +
+      CONCEPTS.map((c) => '<button type="button" class="chip" data-concept="' + esc(c.id) + '" aria-pressed="false">' +
+        esc(c.name) + '<span class="chip-n">' + c.terms.length + '</span></button>').join('');
+    const chips = $$('.chip', chipsEl);
+
+    let groups = null;
+    // Built the first time the Key terms tab is shown, so the grid paints first.
+    function buildTerms() {
+      if (groups) return;
+      listEl.innerHTML = CONCEPTS.map((c) =>
+        '<section class="terms-group" data-concept="' + esc(c.id) + '">' +
+          '<div class="terms-intro">' +
+            '<h2 class="terms-heading">' + esc(c.name) + '</h2>' +
+            '<p class="terms-blurb">' + esc(c.blurb) + '</p>' +
+            '<button type="button" class="text-btn terms-togrid" data-concept="' + esc(c.id) + '">See ' + esc(c.name.toLowerCase()) + ' across topics →</button>' +
+          '</div>' +
+          '<dl class="terms">' +
+            c.terms.map((id) => {
+              const t = TERMS[id];
+              const others = homes[id].filter((h) => h.id !== c.id).map((h) => h.name);
+              return '<div class="term">' +
+                '<dt>' + esc(t.term) + '</dt>' +
+                '<dd>' + esc(t.def) +
+                  (others.length ? '<span class="term-also">Also under ' + esc(others.join(', ')) + '</span>' : '') +
+                '</dd></div>';
+            }).join('') +
+          '</dl>' +
+        '</section>').join('');
+
+      groups = $$('.terms-group', listEl).map((el, i) => ({
+        el: el, id: CONCEPTS[i].id, shown: true,
+        rows: $$('.term', el).map((rowEl, j) => {
+          const t = TERMS[CONCEPTS[i].terms[j]];
+          return { el: rowEl, id: CONCEPTS[i].terms[j], shown: true, s: norm(t.term + ' ' + t.def) };
+        })
+      }));
+    }
+    const total = Object.keys(homes).length;
+    let words = [], selected = 'all', liveTimer = null;
+
+    function renderTerms() {
+      if (!groups) return;
+      const seen = {};
+      let rowsShown = 0;
+      groups.forEach((g) => {
+        const conceptOk = selected === 'all' || g.id === selected;
+        let any = 0;
+        g.rows.forEach((r) => {
+          let ok = conceptOk;
+          for (let i = 0; ok && i < words.length; i++) if (r.s.indexOf(words[i]) === -1) ok = false;
+          if (ok !== r.shown) { r.shown = ok; r.el.hidden = !ok; }
+          if (ok) { any++; rowsShown++; seen[r.id] = 1; }
+        });
+        const gOk = any > 0;
+        if (gOk !== g.shown) { g.shown = gOk; g.el.hidden = !gOk; }
+      });
+      const unique = Object.keys(seen).length;
+      emptyEl.hidden = rowsShown !== 0;
+      countEl.textContent = (selected === 'all' && !words.length) ? total + ' terms' : unique + ' of ' + total + ' terms';
+      clearTimeout(liveTimer);
+      liveTimer = setTimeout(() => { liveEl.textContent = unique + (unique === 1 ? ' term shown' : ' terms shown'); }, 450);
+    }
+    function selectConcept(id) {
+      selected = id;
+      chips.forEach((b) => b.setAttribute('aria-pressed', b.dataset.concept === id ? 'true' : 'false'));
+      renderTerms();
+    }
+    chips.forEach((b) => b.addEventListener('click', () => selectConcept(b.dataset.concept)));
+    function setSearch(v) { const q = norm(v); words = q ? q.split(' ') : []; }
+    searchEl.addEventListener('input', () => { setSearch(searchEl.value); clearEl.hidden = !searchEl.value; renderTerms(); });
+    searchEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && searchEl.value) { searchEl.value = ''; setSearch(''); clearEl.hidden = true; renderTerms(); }
+    });
+    clearEl.addEventListener('click', () => { searchEl.value = ''; setSearch(''); clearEl.hidden = true; searchEl.focus(); renderTerms(); });
+    listEl.addEventListener('click', (e) => {
+      const b = e.target.closest('.terms-togrid');
+      if (!b) return;
+      highlight = b.dataset.concept;
+      showView('grid');
+      history.replaceState(null, '', '#grid');
+      applyHighlight();
+      window.scrollTo({ top: 0 });
+    });
+
+    /* ---- start ---- */
+    const hash = decodeURIComponent(location.hash.slice(1));
+    if (hash.indexOf('angle=') === 0) {
+      const parts = hash.slice(6).split(':');
+      const rec = topicById[parts[0]];
+      if (rec) ctxId = rec.ctx.id;
+      showView('grid');
+      openAngle(parts[0], parts[1]);
+    } else if (hash === 'terms' || hash === 'grid') {
+      showView(hash);
+    } else {
+      showView(store.get('psych-concepts-view') === 'terms' ? 'terms' : 'grid');
+    }
+  }
+
+  /* ---------- deep links into notes (notes.html#n13) ---------- */
+  function openNoteFromHash() {
+    const id = location.hash.slice(1);
+    if (!id) return;
+    const item = document.getElementById(id);
+    if (!item || !item.classList.contains('item')) return;
+    item.classList.add('open');
+    const head = $('.item-head', item);
+    if (head) head.setAttribute('aria-expanded', 'true');
+    requestAnimationFrame(() => item.scrollIntoView({ block: 'start', behavior: reducedMotion.matches ? 'auto' : 'smooth' }));
   }
 
   /* ---------- copy button ----------
@@ -982,7 +1160,8 @@
     initMobileNav();
     initNotes();
     initQuestions();
-    initTerms();
+    initConcepts();
+    openNoteFromHash();
     initCopy();
   });
 })();

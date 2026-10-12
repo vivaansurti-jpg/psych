@@ -5,7 +5,7 @@ psych is a lightweight revision website for IB Psychology. It brings the course 
 ## What it includes
 
 - Revision notes with supporting studies and evaluation
-- Key terms grouped by course concept
+- A concept × content grid for Paper 1 Section C, and key terms grouped by course concept
 - An exam-style question bank with search and filters
 - A reusable prompt for AI-assisted answer marking
 - Responsive, accessible layouts for desktop and mobile

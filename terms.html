@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Key Terms · psych</title>
-<meta name="description" content="Key terms for the six IB Psychology concepts — bias, causality, change, measurement, perspective and responsibility — with short definitions.">
+<title>Concepts · psych</title>
+<meta name="description" content="The six IB Psychology concepts: a concept × content grid for Paper 1 Section C, and key terms with short definitions.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Key Terms · psych">
-<meta property="og:description" content="Key terms for the six IB Psychology concepts, with short definitions.">
+<meta property="og:title" content="Concepts · psych">
+<meta property="og:description" content="A concept × content grid for Paper 1 Section C, plus key terms for the six IB Psychology concepts.">
 <meta property="og:image" content="og-preview.png">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
@@ -33,7 +33,7 @@
     <div class="nav-links" id="site-nav">
       <a href="index.html"><span class="nav-full">What is psych?</span><span class="nav-short">About</span></a>
       <a href="notes.html"><span class="nav-full">Revision Notes</span><span class="nav-short">Notes</span></a>
-      <a href="terms.html" aria-current="page"><span class="nav-full">Key Terms</span><span class="nav-short">Terms</span></a>
+      <a href="terms.html" aria-current="page"><span class="nav-full">Concepts</span><span class="nav-short">Concepts</span></a>
       <a href="questions.html"><span class="nav-full">Question Bank</span><span class="nav-short">Questions</span></a>
       <a href="marking.html"><span class="nav-full">AI Marking</span><span class="nav-short">Marking</span></a>
     </div>
@@ -43,62 +43,66 @@
 <main id="main">
 
   <header class="wrap page-head">
-    <h1 class="page-title">Key Terms</h1>
-    <p class="page-note">Terms the IB Psychology guide lists under each concept, with short definitions
-       from the guide. Some terms sit under more than one concept.</p>
+    <h1 class="page-title">Concepts</h1>
+    <p class="page-note">Every Paper 1 Section C question joins one concept to one topic in one context.
+       The grid shows how each concept applies to each topic; the key terms define the concepts themselves.</p>
   </header>
 
-  <div class="wrap terms-search">
-    <div class="search-field">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="7"></circle><line x1="20.5" y1="20.5" x2="16.65" y2="16.65"></line>
-      </svg>
-      <label class="sr-only" for="terms-search">Search key terms</label>
-      <input type="search" id="terms-search" placeholder="Search terms and definitions" autocomplete="off">
-      <button type="button" class="search-clear" id="terms-search-clear" hidden aria-label="Clear search">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
+  <div class="wrap">
+    <div class="view-switch" role="tablist" aria-label="Choose a view">
+      <button type="button" role="tab" id="tab-grid" aria-controls="view-grid" aria-selected="true">Concept grid</button>
+      <button type="button" role="tab" id="tab-terms" aria-controls="view-terms" aria-selected="false" tabindex="-1">Key terms</button>
     </div>
-    <div class="control-row">
-      <div class="filter-wrap">
-        <button type="button" class="filter-btn" id="terms-filter-btn"
-                aria-expanded="false" aria-haspopup="true" aria-controls="terms-filter-panel">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <line x1="3" y1="7" x2="21" y2="7"></line><line x1="6" y1="12" x2="18" y2="12"></line><line x1="10" y1="17" x2="14" y2="17"></line>
-          </svg>
-          Filter
-          <span class="filter-count" id="terms-filter-count" hidden>1</span>
-          <svg class="caret" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-        </button>
-
-        <div class="filter-panel" id="terms-filter-panel" hidden role="dialog" aria-label="Filter key terms by concept">
-          <div class="fgroup" role="group" aria-label="Concept">
-            <p class="fgroup-title">Concept</p>
-            <button type="button" class="fopt" data-concept="all" data-label="All concepts" aria-pressed="true"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">All concepts</span><span class="count" aria-hidden="true">96</span></button>
-            <button type="button" class="fopt" data-concept="bias" data-label="Bias" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Bias</span><span class="count" aria-hidden="true">16</span></button>
-            <button type="button" class="fopt" data-concept="causality" data-label="Causality" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Causality</span><span class="count" aria-hidden="true">16</span></button>
-            <button type="button" class="fopt" data-concept="change" data-label="Change" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Change</span><span class="count" aria-hidden="true">10</span></button>
-            <button type="button" class="fopt" data-concept="measurement" data-label="Measurement" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Measurement</span><span class="count" aria-hidden="true">25</span></button>
-            <button type="button" class="fopt" data-concept="perspective" data-label="Perspective" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Perspective</span><span class="count" aria-hidden="true">12</span></button>
-            <button type="button" class="fopt" data-concept="responsibility" data-label="Responsibility" aria-pressed="false"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="label">Responsibility</span><span class="count" aria-hidden="true">17</span></button>
-          </div>
-        </div>
-      </div>
-      <p class="active-filters" id="terms-active" hidden></p>
-      <p class="result-count" id="terms-count">96 terms</p>
-    </div>
-    <p class="sr-only" id="terms-live" role="status" aria-live="polite"></p>
   </div>
 
-  <div class="wrap">
+  <section class="wrap view" id="view-grid" role="tabpanel" aria-labelledby="tab-grid">
+    <div class="ctx-switch" role="group" aria-label="Context" id="ctx-switch"></div>
+    <p class="grid-hint">Pick a cell to see the angle, the evidence to use and a counter-point.
+      <span class="grid-key"><span class="key-dot" aria-hidden="true"></span>angle written</span>
+      <span class="grid-key"><span class="key-dash" aria-hidden="true">–</span>weaker link, general angle</span>
+    </p>
+    <div class="cgrid" id="cgrid"></div>
+  </section>
+
+  <section class="wrap view" id="view-terms" role="tabpanel" aria-labelledby="tab-terms" hidden>
+    <div class="terms-search">
+      <div class="search-field">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle><line x1="20.5" y1="20.5" x2="16.65" y2="16.65"></line>
+        </svg>
+        <label class="sr-only" for="terms-search">Search key terms</label>
+        <input type="search" id="terms-search" placeholder="Search terms and definitions" autocomplete="off">
+        <button type="button" class="search-clear" id="terms-search-clear" hidden aria-label="Clear search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="control-row">
+        <div class="concept-chips" role="group" aria-label="Concept" id="concept-chips"></div>
+        <p class="result-count" id="terms-count"></p>
+      </div>
+      <p class="sr-only" id="terms-live" role="status" aria-live="polite"></p>
+    </div>
     <div id="terms-list"></div>
     <div class="empty" id="terms-empty" hidden>
       <h2>Nothing matches</h2>
-      <p>Try a different search or filter.</p>
+      <p>Try a different search or concept.</p>
     </div>
-  </div>
+  </section>
+
+  <dialog class="angle-dialog" id="angle-dialog" aria-labelledby="angle-title">
+    <div class="angle-sheet">
+      <div class="angle-top">
+        <p class="angle-eyebrow" id="angle-eyebrow"></p>
+        <button type="button" class="angle-close" id="angle-close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      </div>
+      <h2 class="angle-title" id="angle-title"></h2>
+      <div id="angle-body"></div>
+      <div class="angle-nav">
+        <button type="button" class="text-btn" id="angle-prev">← Previous concept</button>
+        <button type="button" class="text-btn" id="angle-next">Next concept →</button>
+      </div>
+    </div>
+  </dialog>
 
 </main>
 
@@ -112,7 +116,9 @@
   </span>
 </footer>
 
+<script src="data.js"></script>
 <script src="terms.js"></script>
+<script src="grid.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
