@@ -25,3 +25,7 @@ python3 -m http.server 8000
 Then visit `http://localhost:8000`.
 
 This is an independent revision resource and is not affiliated with or endorsed by the International Baccalaureate Organization.
+
+## Design
+
+Interaction and visual design follow the `apple-design` skill by Emil Kowalski, installed in `.claude/skills/apple-design`: instant press feedback, interruptible spring motion, a draggable filter sheet on phones, translucent floating chrome, size-specific typography, and fallbacks for reduced motion, reduced transparency and higher contrast.

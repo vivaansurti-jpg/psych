@@ -27,6 +27,96 @@
   const field = (label, body) =>
     '<div class="field"><div class="field-label">' + label + '</div>' + body + '</div>';
 
+  /* ---------- motion preferences ---------- */
+  const mq = (q) => (window.matchMedia ? window.matchMedia(q) : { matches: false, addEventListener() {} });
+  const reducedMotion = mq('(prefers-reduced-motion: reduce)');
+  const phone = mq('(max-width: 680px)');
+
+  /* ---------- haptics ----------
+     Reserved for two meaningful moments (a successful copy, a sheet dismissed
+     by a flick) and fired on the same frame as the visual change. */
+  function buzz(pattern) {
+    try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (err) {}
+  }
+
+  /* ---------- spring ----------
+     Apple's two designer-facing parameters:
+       damping  — 1 = critically damped (no overshoot), < 1 bounces
+       response — roughly how quickly it gets there, in seconds (not a duration)
+     A spring always animates from its current on-screen value and keeps its
+     velocity when it is re-targeted, so any motion can be grabbed or reversed
+     mid-flight without a jump or a "brick wall". */
+  function Spring(initial, onUpdate, restDelta) {
+    let x = initial, v = 0, target = initial;
+    let damping = 1, response = 0.35, raf = 0, last = 0, onRest = null;
+    const rest = restDelta || 0.001;
+
+    function step(now) {
+      const dt = Math.min(0.064, Math.max(0, (now - last) / 1000));
+      last = now;
+      const k = Math.pow((2 * Math.PI) / response, 2);   // stiffness (mass = 1)
+      const c = (4 * Math.PI * damping) / response;       // damping coefficient
+      const n = Math.max(1, Math.ceil(dt * 240));         // fixed sub-steps for stability
+      const h = dt / n;
+      for (let i = 0; i < n; i++) {
+        v += (-k * (x - target) - c * v) * h;
+        x += v * h;
+      }
+      if (Math.abs(x - target) < rest && Math.abs(v) < rest * 10) {
+        x = target; v = 0; raf = 0;
+        onUpdate(x);
+        const done = onRest; onRest = null;
+        if (done) done();
+        return;
+      }
+      onUpdate(x);
+      raf = requestAnimationFrame(step);
+    }
+
+    return {
+      get value() { return x; },
+      get target() { return target; },
+      get moving() { return raf !== 0; },
+      to(t, opts) {
+        opts = opts || {};
+        target = t;
+        if (opts.damping != null) damping = opts.damping;
+        if (opts.response != null) response = opts.response;
+        if (opts.velocity != null) v = opts.velocity;   // velocity hand-off from a gesture
+        onRest = opts.onRest || null;
+        if (!raf) { last = performance.now(); raf = requestAnimationFrame(step); }
+      },
+      // Freeze at the presentation value (used when a finger grabs it).
+      stop() { if (raf) cancelAnimationFrame(raf); raf = 0; v = 0; onRest = null; },
+      jump(t) { this.stop(); x = target = t; onUpdate(x); }
+    };
+  }
+
+  /* Where a flick is going, using the same exponential-decay projection as
+     scroll deceleration (Designing Fluid Interfaces, WWDC 2018). */
+  function project(velocity, decelerationRate) {
+    const d = decelerationRate || 0.998;
+    return (velocity / 1000) * d / (1 - d);
+  }
+
+  /* Past a boundary, follow less and less: soft resistance, not a hard stop. */
+  function rubberband(overshoot, dimension, constant) {
+    const c = constant || 0.55;
+    return (overshoot * dimension * c) / (dimension + c * Math.abs(overshoot));
+  }
+
+  /* Velocity from the last few pointer samples (px/s), not just the last two. */
+  function velocityFrom(history) {
+    const now = history[history.length - 1];
+    let first = now;
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (now.t - history[i].t > 100) break;
+      first = history[i];
+    }
+    const dt = (now.t - first.t) / 1000;
+    return dt > 0 ? (now.y - first.y) / dt : 0;
+  }
+
   /* ---------- colour theme ---------- */
   function initTheme() {
     const root = document.documentElement;
@@ -51,16 +141,51 @@
       $('.sr-only', button).textContent = label;
     }
 
-    button.addEventListener('click', () => {
-      root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem('psych-theme', root.dataset.theme); } catch (err) {}
+    // Ease light <-> dark instead of an abrupt brightness jump.
+    let easeTimer = null;
+    function apply(theme) {
+      root.classList.add('theme-changing');
+      root.dataset.theme = theme;
       render();
+      clearTimeout(easeTimer);
+      easeTimer = setTimeout(() => root.classList.remove('theme-changing'), 360);
+    }
+
+    button.addEventListener('click', () => {
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem('psych-theme', next); } catch (err) {}
+      apply(next);
     });
+
+    // Until someone picks a theme here, follow the device's appearance.
+    mq('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      let saved = null;
+      try { saved = localStorage.getItem('psych-theme'); } catch (err) {}
+      if (saved !== 'light' && saved !== 'dark') apply(e.matches ? 'dark' : 'light');
+    });
+
     document.body.appendChild(button);
     render();
   }
 
-  /* ---------- disclosure cards (event-delegated) ---------- */
+  /* ---------- floating bar: scroll-edge effect ---------- */
+  function initScrollEdge() {
+    const nav = $('.nav');
+    if (!nav) return;
+    let ticking = false;
+    function update() {
+      ticking = false;
+      nav.classList.toggle('is-scrolled', window.scrollY > 2);
+    }
+    window.addEventListener('scroll', () => {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }, { passive: true });
+    update();
+  }
+
+  /* ---------- disclosure cards (event-delegated) ----------
+     Highlight on press (CSS :active), commit on release. A second tap while
+     a card is still opening reverses it immediately: nothing is locked out. */
   function wireDisclosure(listEl) {
     listEl.addEventListener('click', (e) => {
       const head = e.target.closest('.item-head');
@@ -71,7 +196,11 @@
     });
   }
 
-  /* ---------- filter popover ---------- */
+  /* ---------- filter popover / sheet ----------
+     Desktop: a floating panel that grows out of the Filter button and goes
+     back into it — same path both ways, origin anchored to the trigger.
+     Phone: a bottom sheet with a dimming scrim, dragged 1:1, rubber-banded
+     at the top, and released with momentum projection + velocity hand-off. */
   function wirePopover(btn, panel) {
     if (!btn || !panel) return { close: function () {} };
 
@@ -79,51 +208,156 @@
     // which otherwise become its containing block in some browsers.
     document.body.appendChild(panel);
 
+    const grabber = document.createElement('div');
+    grabber.className = 'sheet-grabber';
+    grabber.setAttribute('aria-hidden', 'true');
+    grabber.innerHTML = '<span></span>';
+    panel.insertBefore(grabber, panel.firstChild);
+
+    const scrim = document.createElement('div');
+    scrim.className = 'sheet-scrim';
+    scrim.setAttribute('aria-hidden', 'true');
+    document.body.insertBefore(scrim, panel);
+
     const edge = 12;
     const gap = 8;
+    let isOpen = false;
+    let mode = null;          // 'pop' | 'sheet' — fixed for the life of one opening
+    let openAbove = false;
+    let sheetH = 1;
+
+    /* --- desktop: one progress value, 0 (inside the button) → 1 (open) --- */
+    const pop = Spring(0, (p) => {
+      const q = Math.max(0, Math.min(1, p));
+      panel.style.opacity = q;
+      if (reducedMotion.matches) { panel.style.transform = ''; panel.style.filter = ''; return; }
+      const dir = openAbove ? 1 : -1;
+      panel.style.transform =
+        'translateY(' + ((1 - p) * 6 * dir).toFixed(2) + 'px) scale(' + (0.94 + 0.06 * p).toFixed(4) + ')';
+      // Materialise: the surface sharpens as it arrives instead of only fading.
+      panel.style.filter = p > 0.985 ? '' : 'blur(' + ((1 - q) * 4).toFixed(2) + 'px)';
+    }, 0.002);
+
+    /* --- phone: the sheet's offset from fully open, in px --- */
+    const sheet = Spring(0, (y) => {
+      if (reducedMotion.matches && !dragging) {
+        panel.style.transform = '';
+      } else {
+        panel.style.transform = 'translate3d(0,' + y.toFixed(2) + 'px,0)';
+      }
+      // The scrim follows the sheet, so mid-drag frames already show the outcome.
+      scrim.style.opacity = Math.max(0, Math.min(1, 1 - y / sheetH)).toFixed(3);
+    }, 0.5);
+
+    /* --- reduced motion: cross-fade the sheet instead of sliding it --- */
+    const fade = Spring(0, (o) => {
+      const q = Math.max(0, Math.min(1, o));
+      panel.style.opacity = q;
+      scrim.style.opacity = q;
+    }, 0.004);
 
     function position() {
-      if (panel.hidden) return;
+      if (!isOpen || mode !== 'pop') return;
 
       const rect = btn.getBoundingClientRect();
       const viewportWidth = document.documentElement.clientWidth;
       const viewportHeight = window.innerHeight;
-      const mobile = viewportWidth <= 680;
-      const width = mobile
-        ? Math.max(0, viewportWidth - 36)
-        : Math.min(288, viewportWidth - (2 * edge));
+      const width = Math.min(288, viewportWidth - (2 * edge));
       const left = Math.max(edge, Math.min(rect.left, viewportWidth - width - edge));
       const below = viewportHeight - rect.bottom - gap - edge;
       const above = rect.top - gap - edge;
-      const openAbove = below < 260 && above > below;
+      openAbove = below < 260 && above > below;
       const available = Math.max(140, openAbove ? above : below);
 
       panel.style.width = width + 'px';
       panel.style.left = left + 'px';
-      panel.style.maxHeight = Math.min(mobile ? 400 : 520, available) + 'px';
+      panel.style.maxHeight = Math.min(520, available) + 'px';
       panel.style.top = openAbove
         ? Math.max(edge, rect.top - gap - panel.offsetHeight) + 'px'
         : Math.max(edge, Math.min(viewportHeight - edge, rect.bottom + gap)) + 'px';
+
+      // Anchor the motion to the button that triggered it.
+      const originX = Math.max(0, Math.min(width, rect.left + rect.width / 2 - left));
+      panel.style.transformOrigin = originX + 'px ' + (openAbove ? '100%' : '0');
+    }
+
+    function clearInline() {
+      panel.style.transform = ''; panel.style.opacity = ''; panel.style.filter = '';
+      panel.style.top = ''; panel.style.left = ''; panel.style.width = '';
+      panel.style.maxHeight = ''; panel.style.transformOrigin = '';
+      scrim.style.opacity = '';
+    }
+
+    function finishClose() {
+      if (isOpen) return;          // reopened mid-flight: nothing to finish
+      panel.hidden = true;
+      panel.classList.remove('is-sheet');
+      scrim.classList.remove('is-visible');
+      clearInline();
+      mode = null;
     }
 
     function open() {
-      panel.hidden = false;
+      const wasMoving = !panel.hidden;   // still on screen from a close in flight
+      isOpen = true;
       btn.setAttribute('aria-expanded', 'true');
-      position();
       document.addEventListener('click', onDocClick, true);
       document.addEventListener('keydown', onKey);
-      window.addEventListener('resize', position, { passive: true });
+      window.addEventListener('resize', onResize, { passive: true });
       window.addEventListener('scroll', position, { passive: true });
+
+      if (!wasMoving) mode = phone.matches ? 'sheet' : 'pop';
+      panel.hidden = false;
+
+      if (mode === 'sheet') {
+        panel.classList.add('is-sheet');
+        scrim.classList.add('is-visible');
+        sheetH = panel.offsetHeight || 1;
+        if (reducedMotion.matches) {
+          sheet.jump(0);
+          if (!wasMoving) fade.jump(0);
+          fade.to(1, { damping: 1, response: 0.2 });
+        } else {
+          if (!wasMoving) sheet.jump(sheetH);   // otherwise start from where it is now
+          sheet.to(0, { damping: 1, response: 0.3 });
+        }
+      } else {
+        position();
+        if (!wasMoving) pop.jump(0);
+        pop.to(1, { damping: 1, response: reducedMotion.matches ? 0.2 : 0.3 });
+      }
     }
+
     function close(refocus) {
-      if (panel.hidden) return;
-      panel.hidden = true;
+      if (!isOpen) return;
+      isOpen = false;
       btn.setAttribute('aria-expanded', 'false');
       document.removeEventListener('click', onDocClick, true);
       document.removeEventListener('keydown', onKey);
-      window.removeEventListener('resize', position);
+      window.removeEventListener('resize', onResize);
       window.removeEventListener('scroll', position);
       if (refocus) btn.focus();
+
+      if (mode === 'sheet') {
+        if (reducedMotion.matches) fade.to(0, { damping: 1, response: 0.2, onRest: finishClose });
+        else sheet.to(sheetH, { damping: 1, response: 0.3, onRest: finishClose });
+      } else {
+        pop.to(0, { damping: 1, response: reducedMotion.matches ? 0.2 : 0.3, onRest: finishClose });
+      }
+    }
+
+    function closeNow() {
+      isOpen = false;
+      btn.setAttribute('aria-expanded', 'false');
+      pop.stop(); sheet.stop(); fade.stop();
+      finishClose();
+    }
+
+    function onResize() {
+      // Crossing between phone and desktop mid-open: settle rather than morph.
+      if ((mode === 'sheet') !== phone.matches) { closeNow(); return; }
+      if (mode === 'sheet') sheetH = panel.offsetHeight || 1;
+      position();
     }
     function onDocClick(e) {
       if (panel.contains(e.target) || btn.contains(e.target)) return;
@@ -131,10 +365,95 @@
     }
     function onKey(e) { if (e.key === 'Escape') { e.stopPropagation(); close(true); } }
 
-    btn.addEventListener('click', () => { panel.hidden ? open() : close(false); });
+    btn.addEventListener('click', () => { isOpen ? close(false) : open(); });
+    scrim.addEventListener('click', () => close(false));
+
+    /* --- sheet drag --- */
+    let dragging = false, pending = false, startY = 0, startSheetY = 0, history = [];
+
+    function dragStart(clientY) {
+      if (mode !== 'sheet' || !isOpen) return false;
+      pending = true; dragging = false;
+      startY = clientY;
+      history = [{ y: clientY, t: performance.now() }];
+      return true;
+    }
+    function dragMove(clientY) {
+      if (!pending && !dragging) return false;
+      const now = performance.now();
+      if (!dragging) {
+        // ~10px of hysteresis before committing to a drag, then track 1:1.
+        if (Math.abs(clientY - startY) < 10) return false;
+        dragging = true; pending = false;
+        fade.stop();
+        if (reducedMotion.matches) fade.jump(1);
+        sheet.stop();                       // grab it wherever it is on screen
+        startSheetY = sheet.value;
+        startY = clientY;                   // rebase so there is no jump at the threshold
+        panel.style.opacity = '';
+      }
+      history.push({ y: clientY, t: now });
+      if (history.length > 6) history.shift();
+      let y = startSheetY + (clientY - startY);
+      if (y < 0) y = rubberband(y, 120);   // pulled past fully open
+      sheet.jump(y);
+      return true;
+    }
+    function dragEnd() {
+      if (pending) { pending = false; return; }
+      if (!dragging) return;
+      dragging = false;
+      const v = velocityFrom(history);
+      const y = sheet.value;
+      // Choose the destination from where the flick is heading, not from where
+      // the finger let go. A clear flick decides by its direction alone.
+      let target;
+      if (Math.abs(v) > 300) target = v > 0 ? sheetH : 0;
+      else target = (y + project(v)) > sheetH / 2 ? sheetH : 0;
+      const flicked = Math.abs(v) > 300;
+      const opts = { velocity: v, damping: flicked ? 0.8 : 1, response: 0.3 };
+
+      if (target === sheetH) {
+        if (flicked) buzz(8);
+        isOpen = false;
+        btn.setAttribute('aria-expanded', 'false');
+        document.removeEventListener('click', onDocClick, true);
+        document.removeEventListener('keydown', onKey);
+        window.removeEventListener('resize', onResize);
+        window.removeEventListener('scroll', position);
+        if (reducedMotion.matches) fade.to(0, { damping: 1, response: 0.2, onRest: finishClose });
+        else sheet.to(sheetH, Object.assign(opts, { onRest: finishClose }));
+      } else {
+        sheet.to(0, opts);
+      }
+    }
+
+    // Grabber: Pointer Events with capture, so tracking continues off the element.
+    grabber.addEventListener('pointerdown', (e) => {
+      if (!dragStart(e.clientY)) return;
+      grabber.setPointerCapture(e.pointerId);
+    });
+    grabber.addEventListener('pointermove', (e) => { dragMove(e.clientY); });
+    grabber.addEventListener('pointerup', dragEnd);
+    grabber.addEventListener('pointercancel', dragEnd);
+
+    // Sheet body: once its list is scrolled to the top, pulling down drags the sheet.
+    panel.addEventListener('touchstart', (e) => {
+      if (mode !== 'sheet' || e.target.closest('.sheet-grabber')) return;
+      if (panel.scrollTop > 0 || e.touches.length !== 1) return;
+      dragStart(e.touches[0].clientY);
+    }, { passive: true });
+    panel.addEventListener('touchmove', (e) => {
+      if (!pending && !dragging) return;
+      const y = e.touches[0].clientY;
+      if (pending && y < startY) { pending = false; return; }   // scrolling up: let the list scroll
+      if (dragMove(y) && e.cancelable) e.preventDefault();
+    }, { passive: false });
+    panel.addEventListener('touchend', dragEnd);
+    panel.addEventListener('touchcancel', dragEnd);
+
     return { close: close };
   }
-
   /* ---------- filter + search controller ---------- */
   function buildFilters(config) {
     const state = { search: '', groups: {} };
@@ -563,7 +882,9 @@
     render();
   }
 
-  /* ---------- copy button ---------- */
+  /* ---------- copy button ----------
+     Completion feedback: the label, the button's state and (on phones that
+     support it) a light tap all change on the same frame as the copy. */
   function initCopy() {
     const btn = $('#copy-prompt');
     if (!btn) return;
@@ -589,6 +910,8 @@
         } catch (e2) { ok = false; }
       }
       label.textContent = ok ? 'Copied' : 'Press Ctrl/Cmd + C';
+      btn.classList.toggle('is-done', ok);
+      if (ok) buzz(10);
       if (!ok) {
         const range = document.createRange();
         range.selectNodeContents(source);
@@ -596,21 +919,39 @@
         sel.removeAllRanges(); sel.addRange(range);
       }
       clearTimeout(timer);
-      timer = setTimeout(() => { label.textContent = 'Copy prompt'; }, 2200);
+      timer = setTimeout(() => {
+        label.textContent = 'Copy prompt';
+        btn.classList.remove('is-done');
+      }, 2200);
     });
   }
 
-  /* ---------- mobile navigation ---------- */
+  /* ---------- mobile navigation ----------
+     The menu grows out of the toggle and returns into it along the same path.
+     It's a spring, so tapping the toggle again mid-flight simply reverses it. */
   function initMobileNav() {
     const nav = $('.nav');
     const toggle = $('.nav-toggle', nav);
     const links = $('.nav-links', nav);
     if (!nav || !toggle || !links) return;
 
+    const menu = Spring(0, (p) => {
+      const q = Math.max(0, Math.min(1, p));
+      links.style.opacity = phone.matches ? q : '';
+      links.style.transform = (!phone.matches || reducedMotion.matches) ? ''
+        : 'translateY(' + ((1 - p) * -8).toFixed(2) + 'px) scale(' + (0.96 + 0.04 * p).toFixed(4) + ')';
+    }, 0.002);
+
     function setOpen(open, refocus) {
       nav.classList.toggle('is-open', open);
       toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
       toggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+      if (open) links.classList.add('is-shown');
+      menu.to(open ? 1 : 0, {
+        damping: 1,
+        response: reducedMotion.matches ? 0.18 : 0.3,
+        onRest: open ? null : () => links.classList.remove('is-shown')
+      });
       if (refocus) toggle.focus();
     }
 
@@ -626,13 +967,18 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && nav.classList.contains('is-open')) setOpen(false, true);
     });
-    window.matchMedia('(min-width: 681px)').addEventListener('change', (e) => {
-      if (e.matches) setOpen(false, false);
+    phone.addEventListener('change', () => {
+      nav.classList.remove('is-open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open navigation');
+      links.classList.remove('is-shown');
+      menu.jump(0);
     });
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     initTheme();
+    initScrollEdge();
     initMobileNav();
     initNotes();
     initQuestions();
