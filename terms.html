@@ -58,14 +58,20 @@
   <section class="wrap view" id="view-grid" role="tabpanel" aria-labelledby="tab-grid">
     <div class="grid-bar">
   <div class="ctx-switch" role="group" aria-label="Context" id="ctx-switch"></div>
-      <aside class="gkey" aria-label="Key">
-        <p class="gkey-title">Key</p>
-        <ul class="gkey-list">
-          <li><span class="gkey-swatch is-written" aria-hidden="true"></span>Angle written</li>
-          <li><span class="gkey-swatch is-weak" aria-hidden="true">–</span>Weaker link, general angle</li>
-        </ul>
-        <p class="gkey-hint"><span class="on-pointer">Click</span><span class="on-touch">Tap</span> a cell to open it.</p>
-      </aside>
+      <div class="gkey-wrap">
+        <button type="button" class="gkey-btn" id="gkey-btn" aria-expanded="false" aria-controls="gkey">
+          <span class="gkey-icon" aria-hidden="true"><i></i><i></i></span>
+          Key
+          <svg class="caret" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.75 5 6.75 8 3.75" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <aside class="gkey" id="gkey" aria-label="Key" hidden>
+          <ul class="gkey-list">
+            <li><span class="gkey-swatch is-written" aria-hidden="true"></span>Angle written</li>
+            <li><span class="gkey-swatch is-weak" aria-hidden="true">–</span>Weaker link, general angle</li>
+          </ul>
+          <p class="gkey-hint"><span class="on-pointer">Click</span><span class="on-touch">Tap</span> a cell to open it.</p>
+        </aside>
+      </div>
     </div>
     <div class="cgrid" id="cgrid"></div>
   </section>

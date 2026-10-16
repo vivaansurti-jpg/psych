@@ -514,21 +514,44 @@ html[data-theme="dark"] .seg-btn:hover, html[data-theme="dark"] .chip:hover { ba
 
 /* context switch on the left, the key on the right */
 .grid-bar {
-  display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem 2rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem 2rem;
   flex-wrap: wrap; margin-top: 1.5rem;
 }
 .grid-bar .ctx-switch { margin-top: 0; }
+.gkey-wrap { position: relative; flex-shrink: 0; }
+.gkey-btn {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .44rem .78rem .44rem .62rem; border-radius: 999px;
+  border: 1px solid var(--line-3); background: var(--surface);
+  font: inherit; font-size: .89rem; font-weight: 500; color: var(--ink-2); cursor: pointer;
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease),
+              border-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+.gkey-btn:hover { color: var(--ink); background: var(--line-2); }
+.gkey-btn:active { transform: scale(.97); transition: transform var(--press) ease-out; }
+.gkey-btn[aria-expanded="true"] { color: var(--violet); border-color: var(--violet); background: var(--violet-soft); }
+.gkey-btn .caret { color: var(--faint); transition: transform var(--base) var(--ease-in); }
+.gkey-btn[aria-expanded="true"] .caret { color: currentColor; transform: rotate(180deg); transition-timing-function: var(--ease); }
+/* a tiny version of the two swatches, so the button says what it holds */
+.gkey-icon { display: inline-flex; flex-direction: column; gap: 2px; }
+.gkey-icon i { display: block; width: 12px; height: 5px; border-radius: 1.5px; background: var(--violet-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--violet) 35%, transparent); }
+.gkey-icon i + i { background: transparent; box-shadow: inset 0 0 0 1px var(--line-3); }
+
 .gkey {
-  display: grid; grid-template-columns: auto auto; align-items: center; gap: .35rem 1.1rem;
-  padding: .6rem .9rem; border: 1px solid var(--line); border-radius: var(--r-lg);
-  background: var(--surface); font-size: .8rem; color: var(--ink-2); letter-spacing: var(--track-small);
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 30;
+  width: max-content; max-width: calc(100vw - 2 * var(--gutter));
+  display: grid; gap: .5rem;
+  padding: .75rem .9rem .7rem;
+  background: rgba(var(--mat-surface-rgb), .96);
+  border: 1px solid var(--line-3); border-radius: var(--r-xl);
+  box-shadow: inset 0 1px 0 var(--mat-edge),
+              0 18px 40px -22px rgba(var(--shadow-rgb), .5),
+              0 2px 8px -4px rgba(var(--shadow-rgb), .12);
+  font-size: .82rem; color: var(--ink-2); letter-spacing: var(--track-small);
+  transform-origin: 100% 0;
 }
-.gkey-title {
-  grid-row: span 2; margin: 0; padding-right: .9rem; align-self: stretch;
-  display: flex; align-items: center; border-right: 1px solid var(--line);
-  font-size: .69rem; font-weight: 700; letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--muted);
-}
-.gkey-list { display: flex; flex-direction: column; gap: .3rem; margin: 0; padding: 0; list-style: none; }
+.gkey[hidden] { display: none; }
+.gkey-list { display: flex; flex-direction: column; gap: .45rem; margin: 0; padding: 0; list-style: none; }
 .gkey-list li { display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; }
 .gkey-swatch {
   display: inline-flex; align-items: center; justify-content: center;
@@ -540,7 +563,7 @@ html[data-theme="dark"] .seg-btn:hover, html[data-theme="dark"] .chip:hover { ba
   .gkey-swatch.is-written { background: color-mix(in srgb, var(--violet-soft) 72%, var(--surface)); }
 }
 .gkey-swatch.is-weak { background: transparent; }
-.gkey-hint { grid-column: 2; margin: 0; font-size: .76rem; color: var(--faint); }
+.gkey-hint { margin: 0; padding-top: .5rem; border-top: 1px solid var(--line-2); font-size: .76rem; color: var(--faint); }
 .on-touch { display: none; }
 @media (hover: none) { .on-touch { display: inline; } .on-pointer { display: none; } }
 
@@ -894,10 +917,11 @@ main { flex: 1 0 auto; animation: rise 300ms var(--ease) backwards; }
     scroll-padding-inline: var(--gutter);
   }
   .seg-btn, .chip { flex-shrink: 0; }
-  .grid-bar { display: block; margin-top: 1.25rem; }
-  .gkey { margin-top: .875rem; padding: .65rem .8rem; gap: .35rem .85rem; }
-  .gkey-title { padding-right: .75rem; font-size: .72rem; }
-  .gkey-list { gap: .4rem; }
+  .grid-bar { display: flex; flex-direction: column; align-items: stretch; gap: .625rem; margin-top: 1.25rem; }
+  .gkey-wrap { align-self: flex-end; }
+  .gkey-btn { padding: .62rem .9rem .62rem .75rem; }   /* ~44px tap target */
+  .gkey { padding: .8rem .95rem .75rem; font-size: .85rem; }
+  .gkey-list { gap: .5rem; }
   .gkey-hint { font-size: .78rem; }
   .gkey-swatch.is-weak { border: 1px dashed var(--line-3); }
   .ctx-switch::-webkit-scrollbar, .concept-chips::-webkit-scrollbar { display: none; }
@@ -977,14 +1001,14 @@ main { flex: 1 0 auto; animation: rise 300ms var(--ease) backwards; }
   html { scroll-behavior: auto; }
   @keyframes rise { from { opacity: 0; } }
   main { animation-duration: 200ms; }
-  .btn:active, .text-btn:active, .filter-btn:active, .theme-toggle:active,
+  .btn:active, .text-btn:active, .filter-btn:active, .gkey-btn:active, .theme-toggle:active,
   .nav-links a:active, .nav-toggle:active { transform: none; }
   .search-clear:active { transform: translateY(-50%); }
   .item-body, .item.open .item-body { transition: none; }
   .item-body > .inner, .item.open .item-body > .inner {
     transform: none; transition: opacity 200ms ease;
   }
-  .chevron, .item.open .chevron, .filter-btn .caret, .nav-toggle span,
+  .chevron, .item.open .chevron, .filter-btn .caret, .gkey-btn .caret, .nav-toggle span,
   .nav.is-open .nav-toggle span { transition: color var(--fast) ease; }
 }
 

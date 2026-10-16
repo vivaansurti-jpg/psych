@@ -939,6 +939,50 @@
     ).join('');
     const ctxBtns = $$('.seg-btn', ctxEl);
     const ctxInd = Indicator(ctxEl, 'seg-ind');
+
+    /* --- the key: a small panel that grows out of its button and goes back
+       into it on the same path. One spring, so it can be reversed mid-flight. */
+    (function initKey() {
+      const btn = $('#gkey-btn'), panel = $('#gkey');
+      if (!btn || !panel) return;
+      let isOpen = false;
+      const pop = Spring(0, (p) => {
+        const q = Math.max(0, Math.min(1, p));
+        panel.style.opacity = q.toFixed(3);
+        if (reducedMotion.matches) { panel.style.transform = ''; return; }
+        panel.style.transform = 'translateY(' + ((1 - p) * -6).toFixed(2) + 'px) scale(' + (0.92 + 0.08 * p).toFixed(4) + ')';
+      }, 0.002);
+      function anchor() {
+        // grow from the middle of the button, wherever the panel ends up
+        const b = btn.getBoundingClientRect(), r = panel.getBoundingClientRect();
+        panel.style.transformOrigin = Math.max(0, Math.min(r.width, b.left + b.width / 2 - r.left)) + 'px 0';
+      }
+      function open() {
+        const inFlight = !panel.hidden;
+        isOpen = true;
+        btn.setAttribute('aria-expanded', 'true');
+        panel.hidden = false;
+        if (!inFlight) { pop.jump(0); anchor(); }
+        pop.to(1, { damping: reducedMotion.matches ? 1 : 0.86, response: reducedMotion.matches ? 0.2 : 0.32 });
+        document.addEventListener('click', onDoc, true);
+        document.addEventListener('keydown', onKey);
+      }
+      function close(refocus) {
+        if (!isOpen) return;
+        isOpen = false;
+        btn.setAttribute('aria-expanded', 'false');
+        document.removeEventListener('click', onDoc, true);
+        document.removeEventListener('keydown', onKey);
+        if (refocus) btn.focus();
+        pop.to(0, { damping: 1, response: reducedMotion.matches ? 0.2 : 0.24, onRest: () => {
+          if (isOpen) return;
+          panel.hidden = true; panel.style.opacity = ''; panel.style.transform = '';
+        } });
+      }
+      function onDoc(e) { if (!panel.contains(e.target) && !btn.contains(e.target)) close(false); }
+      function onKey(e) { if (e.key === 'Escape') { e.stopPropagation(); close(true); } }
+      btn.addEventListener('click', () => { isOpen ? close(false) : open(); });
+    })();
     const arriveGrid = Arrival(gridEl);
     let ctxId = store.get('psych-grid-context');
     if (!GRID_CONTEXTS.some((c) => c.id === ctxId)) ctxId = GRID_CONTEXTS[0].id;
