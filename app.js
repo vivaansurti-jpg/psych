@@ -172,13 +172,21 @@
   function initScrollEdge() {
     const nav = $('.nav');
     if (!nav) return;
-    let ticking = false;
+    const root = document.documentElement;
+    let ticking = false, settle = 0, scrolled = null;
     function update() {
       ticking = false;
-      nav.classList.toggle('is-scrolled', window.scrollY > 2);
+      const s = window.scrollY > 2;
+      if (s !== scrolled) { scrolled = s; nav.classList.toggle('is-scrolled', s); }   // write only on change
     }
+    // While the page is moving, cards under the pointer don't restyle on hover;
+    // that work is invisible mid-scroll and is what makes fast scrolls stutter.
+    function settled() { settle = 0; root.classList.remove('is-scrolling'); }
     window.addEventListener('scroll', () => {
       if (!ticking) { ticking = true; requestAnimationFrame(update); }
+      if (!settle) root.classList.add('is-scrolling');
+      else clearTimeout(settle);
+      settle = setTimeout(settled, 120);
     }, { passive: true });
     update();
   }

@@ -56,11 +56,17 @@
   </div>
 
   <section class="wrap view" id="view-grid" role="tabpanel" aria-labelledby="tab-grid">
-    <div class="ctx-switch" role="group" aria-label="Context" id="ctx-switch"></div>
-    <p class="grid-hint">Pick a cell to see the angle, the evidence to use and a counter-point.
-      <span class="grid-key"><span class="key-dot" aria-hidden="true"></span>angle written</span>
-      <span class="grid-key"><span class="key-dash" aria-hidden="true">–</span>weaker link, general angle</span>
-    </p>
+    <div class="grid-bar">
+  <div class="ctx-switch" role="group" aria-label="Context" id="ctx-switch"></div>
+      <aside class="gkey" aria-label="Key">
+        <p class="gkey-title">Key</p>
+        <ul class="gkey-list">
+          <li><span class="gkey-swatch is-written" aria-hidden="true"></span>Angle written</li>
+          <li><span class="gkey-swatch is-weak" aria-hidden="true">–</span>Weaker link, general angle</li>
+        </ul>
+        <p class="gkey-hint"><span class="on-pointer">Click</span><span class="on-touch">Tap</span> a cell to open it.</p>
+      </aside>
+    </div>
     <div class="cgrid" id="cgrid"></div>
   </section>
 
