@@ -784,12 +784,70 @@
       topicById[t.id] = { topic: t, ctx: ctx };
     })));
 
+    /* ---- motion helpers for this page ----
+       New content arrives from the direction you moved (a hint of where you
+       went); a single indicator slides between choices instead of the
+       highlight blinking from one to the next. Both are springs, so a second
+       tap mid-flight re-targets from wherever things are on screen. */
+    function Arrival(el) {
+      let dir = 1;
+      const s = Spring(1, (p) => {
+        const q = Math.max(0, Math.min(1, p));
+        if (q >= 0.999) { el.style.opacity = ''; el.style.transform = ''; return; }
+        el.style.opacity = q.toFixed(3);
+        el.style.transform = reducedMotion.matches ? '' :
+          'translate3d(' + ((1 - p) * dir * 14).toFixed(2) + 'px,0,0)';
+      }, 0.002);
+      return function play(d) {
+        dir = d || 1;
+        s.jump(0);
+        s.to(1, { damping: 1, response: reducedMotion.matches ? 0.2 : 0.32 });
+      };
+    }
+
+    function Indicator(container, className, underline) {
+      const ind = document.createElement('span');
+      ind.className = className;
+      ind.setAttribute('aria-hidden', 'true');
+      container.insertBefore(ind, container.firstChild);
+      let x = 0, y = 0, w = 0, h = 0;
+      const paint = () => {
+        ind.style.transform = 'translate3d(' + x.toFixed(2) + 'px,' + y.toFixed(2) + 'px,0)';
+        ind.style.width = w.toFixed(2) + 'px';
+        ind.style.height = h ? h.toFixed(2) + 'px' : '';
+      };
+      // X and Y as independent springs, so a jump across a wrapped row stays in sync.
+      const sx = Spring(0, (v) => { x = v; paint(); }, 0.05);
+      const sy = Spring(0, (v) => { y = v; paint(); }, 0.05);
+      const sw = Spring(0, (v) => { w = v; paint(); }, 0.05);
+      const sh = Spring(0, (v) => { h = v; paint(); }, 0.05);
+      let shown = false;
+      return {
+        move(el, instant) {
+          if (!el || !el.offsetWidth) return;     // not laid out (hidden view): measure later
+          const t = underline
+            ? { x: el.offsetLeft, y: el.offsetTop + el.offsetHeight, w: el.offsetWidth, h: 0 }
+            : { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight };
+          if (instant || !shown || reducedMotion.matches) {
+            sx.jump(t.x); sy.jump(t.y); sw.jump(t.w); sh.jump(t.h);
+            shown = true; ind.classList.add('is-ready');
+            return;
+          }
+          const o = { damping: 1, response: 0.32 };
+          sx.to(t.x, o); sy.to(t.y, o); sw.to(t.w, o); sh.to(t.h, o);
+        }
+      };
+    }
+
     /* ---- views (tabs) ---- */
     const tabs = { grid: $('#tab-grid'), terms: $('#tab-terms') };
     const views = { grid: $('#view-grid'), terms: $('#view-terms') };
-    let view = 'grid';
+    const tabInd = Indicator($('.view-switch'), 'tab-ind', true);
+    const arrive = { grid: Arrival(views.grid), terms: Arrival(views.terms) };
+    let view = null;
     let gridBuilt = false;
     function showView(name, focus) {
+      const prev = view;
       view = name;
       if (name === 'grid' && !gridBuilt) renderGrid();
       if (name === 'terms' && !groups) { buildTerms(); renderTerms(); }
@@ -799,6 +857,9 @@
         tabs[k].tabIndex = on ? 0 : -1;
         views[k].hidden = !on;
       });
+      tabInd.move(tabs[name], !prev);
+      if (name === 'grid') ctxInd.move(ctxBtns.find((b) => b.dataset.ctx === ctxId), true);
+      if (prev && prev !== name) arrive[name](name === 'terms' ? 1 : -1);
       if (focus) tabs[name].focus();
       store.set('psych-concepts-view', name);
     }
@@ -818,6 +879,8 @@
       '<button type="button" class="seg-btn" data-ctx="' + esc(c.id) + '" aria-pressed="false">' + esc(c.name) + '</button>'
     ).join('');
     const ctxBtns = $$('.seg-btn', ctxEl);
+    const ctxInd = Indicator(ctxEl, 'seg-ind');
+    const arriveGrid = Arrival(gridEl);
     let ctxId = store.get('psych-grid-context');
     if (!GRID_CONTEXTS.some((c) => c.id === ctxId)) ctxId = GRID_CONTEXTS[0].id;
     let highlight = null;
@@ -840,7 +903,10 @@
         const on = b.dataset.ctx === ctxId;
         b.setAttribute('aria-pressed', on ? 'true' : 'false');
         if (on && ctxEl.scrollWidth > ctxEl.clientWidth) {
-          ctxEl.scrollLeft = Math.max(0, b.offsetLeft - ctxEl.clientWidth / 2 + b.offsetWidth / 2);
+          ctxEl.scrollTo({
+            left: Math.max(0, b.offsetLeft - ctxEl.clientWidth / 2 + b.offsetWidth / 2),
+            behavior: reducedMotion.matches ? 'auto' : 'smooth'
+          });
         }
       });
       gridEl.innerHTML =
@@ -861,21 +927,69 @@
     function applyHighlight() {
       $$('[data-concept]', gridEl).forEach((el) => el.classList.toggle('is-hl', el.dataset.concept === highlight));
     }
+    const ctxIndex = (id) => GRID_CONTEXTS.findIndex((c) => c.id === id);
     ctxBtns.forEach((b) => b.addEventListener('click', () => {
-      ctxId = b.dataset.ctx; store.set('psych-grid-context', ctxId); renderGrid();
+      if (b.dataset.ctx === ctxId) return;
+      const dir = ctxIndex(b.dataset.ctx) > ctxIndex(ctxId) ? 1 : -1;
+      ctxId = b.dataset.ctx; store.set('psych-grid-context', ctxId);
+      ctxInd.move(b);                 // the pill leaves on the same frame as the press
+      renderGrid();
+      arriveGrid(dir);
     }));
+    window.addEventListener('resize', () => {
+      if (view) tabInd.move(tabs[view], true);
+      if (view === 'grid') ctxInd.move(ctxBtns.find((b) => b.dataset.ctx === ctxId), true);
+    }, { passive: true });
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        if (view) tabInd.move(tabs[view], true);
+        if (view === 'grid') ctxInd.move(ctxBtns.find((b) => b.dataset.ctx === ctxId), true);
+      });
+    }
 
-    /* ---- angle dialog ---- */
+    /* ---- angle card ----
+       Desktop: the card grows out of the cell you pressed and goes back into
+       it when closed, same path both ways. Phone: a bottom sheet that tracks
+       your finger 1:1, rubber-bands at the top, and on release projects the
+       flick to decide whether it closes, handing its velocity to the spring.
+       Every opening and closing can be reversed mid-flight. */
     const dlg = $('#angle-dialog');
+    const dScrim = $('.angle-scrim', dlg), dSheet = $('.angle-sheet', dlg);
+    const dContent = $('#angle-content'), dGrab = $('.angle-grabber', dlg);
     const dEyebrow = $('#angle-eyebrow'), dTitle = $('#angle-title'), dBody = $('#angle-body');
     const dPrev = $('#angle-prev'), dNext = $('#angle-next');
-    let current = null;
+    const arriveContent = Arrival(dContent);
+    let current = null, cardOpen = false, cardMode = null, sheetH = 1, dragging = false;
 
-    function openAngle(topicId, conceptId, fromEl) {
+    const pop = Spring(0, (p) => {
+      const q = Math.max(0, Math.min(1, p));
+      dScrim.style.opacity = q.toFixed(3);
+      dSheet.style.opacity = Math.min(1, q * 1.6).toFixed(3);
+      dSheet.style.transform = reducedMotion.matches ? '' : 'scale(' + (0.9 + 0.1 * p).toFixed(4) + ')';
+      if (!cardOpen && q < 0.02) finishCard();     // hand the page back as soon as it is gone
+    }, 0.002);
+    const sheet = Spring(0, (y) => {
+      dSheet.style.opacity = '1';
+      dSheet.style.transform = 'translate3d(0,' + y.toFixed(2) + 'px,0)';
+      dScrim.style.opacity = Math.max(0, Math.min(1, 1 - y / sheetH)).toFixed(3);
+      if (!cardOpen && !dragging && y > sheetH - 2) finishCard();
+    }, 0.5);
+    const fade = Spring(0, (o) => {
+      const q = Math.max(0, Math.min(1, o));
+      dScrim.style.opacity = q.toFixed(3);
+      dSheet.style.opacity = q.toFixed(3);
+      if (!cardOpen && q < 0.02) finishCard();
+    }, 0.004);
+
+    function finishCard() {
+      if (cardOpen || !dlg.open) return;
+      pop.stop(); sheet.stop(); fade.stop();
+      dlg.close();
+    }
+
+    function fillAngle(topicId, conceptId) {
       const rec = topicById[topicId], c = conceptById[conceptId];
-      if (!rec || !c) return;
       const t = rec.topic, a = GRID_ANGLES[topicId + ':' + conceptId];
-      current = { topicId: topicId, conceptId: conceptId, from: fromEl || null };
       dEyebrow.textContent = c.name + ' × ' + t.name + ' · ' + rec.ctx.name;
       let body = '';
       if (a) {
@@ -898,30 +1012,86 @@
       links.push('<a href="#terms" data-goto-terms="' + esc(conceptId) + '">Key terms for ' + esc(c.name.toLowerCase()) + '</a>');
       body += '<p class="angle-links">' + links.join(SEP) + '</p>';
       dBody.innerHTML = body;
-
       const i = CONCEPTS.findIndex((x) => x.id === conceptId);
       dPrev.hidden = i === 0; dNext.hidden = i === CONCEPTS.length - 1;
-      if (!dlg.open) dlg.showModal();
-      dlg.scrollTop = 0;
+    }
+
+    function cellFor(cur) {
+      return cur && $('.cg-cell[data-topic="' + cur.topicId + '"][data-concept="' + cur.conceptId + '"]', gridEl);
+    }
+
+    function anchorTo(cell) {
+      // Grow out of the cell that was pressed: the card's transform-origin is
+      // the cell's centre, measured against the card's resting position.
+      dSheet.style.transform = '';
+      const r = dSheet.getBoundingClientRect();
+      if (!cell) { dSheet.style.transformOrigin = ''; return; }
+      const c = cell.getBoundingClientRect();
+      dSheet.style.transformOrigin =
+        (c.left + c.width / 2 - r.left).toFixed(1) + 'px ' + (c.top + c.height / 2 - r.top).toFixed(1) + 'px';
+    }
+
+    function openAngle(topicId, conceptId, fromEl) {
+      if (!topicById[topicId] || !conceptById[conceptId]) return;
+      const reopening = dlg.open && !cardOpen;          // closing in flight: reverse it
+      current = { topicId: topicId, conceptId: conceptId };
+      fillAngle(topicId, conceptId);
+      cardOpen = true;
+      if (!dlg.open) {
+        cardMode = phone.matches ? 'sheet' : 'pop';
+        dlg.classList.toggle('is-sheet', cardMode === 'sheet');
+        dlg.showModal();
+        dSheet.scrollTop = 0;
+      }
+      if (reducedMotion.matches) {
+        dSheet.style.transform = '';
+        if (!reopening) fade.jump(0);
+        fade.to(1, { damping: 1, response: 0.2 });
+      } else if (cardMode === 'sheet') {
+        sheetH = dSheet.offsetHeight || 1;
+        if (!reopening) sheet.jump(sheetH);
+        sheet.to(0, { damping: 1, response: 0.3 });
+      } else {
+        if (!reopening) { anchorTo(fromEl); pop.jump(0); }
+        pop.to(1, { damping: 1, response: 0.3 });
+      }
       dTitle.tabIndex = -1;
       dTitle.focus({ preventScroll: true });
       history.replaceState(null, '', '#angle=' + topicId + ':' + conceptId);
     }
-    function closeAngle() {
-      if (!dlg.open) return;
-      dlg.close();
+
+    function closeAngle(velocity) {
+      if (!cardOpen) return;
+      cardOpen = false;
+      const back = cellFor(current);
+      if (reducedMotion.matches) fade.to(0, { damping: 1, response: 0.2 });
+      else if (cardMode === 'sheet') {
+        sheet.to(sheetH, { damping: velocity ? 0.8 : 1, response: 0.3, velocity: velocity || 0 });
+      } else {
+        if (back) anchorTo(back);   // go back into the cell it came from
+        pop.to(0, { damping: 1, response: 0.26 });
+      }
     }
+
+    dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeAngle(); });  // Esc animates too
     dlg.addEventListener('close', () => {
+      dSheet.style.transform = ''; dSheet.style.opacity = ''; dScrim.style.opacity = '';
+      dSheet.style.transformOrigin = '';
       history.replaceState(null, '', '#grid');
-      const sel = current && '.cg-cell[data-topic="' + current.topicId + '"][data-concept="' + current.conceptId + '"]';
-      const el = sel && $(sel, gridEl);
-      if (el) el.focus();
+      const el = cellFor(current);
+      if (el) el.focus({ preventScroll: true });
     });
-    $('#angle-close').addEventListener('click', closeAngle);
-    dlg.addEventListener('click', (e) => { if (e.target === dlg) closeAngle(); });
+    $('#angle-close').addEventListener('click', () => closeAngle());
+    dScrim.addEventListener('click', () => closeAngle());
+
     function step(dir) {
       const i = CONCEPTS.findIndex((x) => x.id === current.conceptId) + dir;
-      if (i >= 0 && i < CONCEPTS.length) openAngle(current.topicId, CONCEPTS[i].id);
+      if (i < 0 || i >= CONCEPTS.length) return;
+      current = { topicId: current.topicId, conceptId: CONCEPTS[i].id };
+      fillAngle(current.topicId, current.conceptId);
+      dSheet.scrollTop = 0;
+      arriveContent(dir);
+      history.replaceState(null, '', '#angle=' + current.topicId + ':' + current.conceptId);
     }
     dPrev.addEventListener('click', () => step(-1));
     dNext.addEventListener('click', () => step(1));
@@ -929,7 +1099,7 @@
       const a = e.target.closest('[data-goto-terms]');
       if (!a) return;
       e.preventDefault();
-      closeAngle();
+      cardOpen = false; finishCard();
       selectConcept(a.dataset.gotoTerms);
       showView('terms');
       history.replaceState(null, '', '#terms');
@@ -939,6 +1109,63 @@
       const cell = e.target.closest('.cg-cell');
       if (cell) openAngle(cell.dataset.topic, cell.dataset.concept, cell);
     });
+
+    /* sheet drag (phone) */
+    let pending = false, startY = 0, startSheetY = 0, trail = [];
+    function dragStart(y) {
+      if (cardMode !== 'sheet' || !cardOpen || reducedMotion.matches) return false;
+      pending = true; dragging = false; startY = y;
+      trail = [{ y: y, t: performance.now() }];
+      return true;
+    }
+    function dragMove(y) {
+      if (!pending && !dragging) return false;
+      if (!dragging) {
+        if (Math.abs(y - startY) < 10) return false;     // hysteresis, then 1:1
+        dragging = true; pending = false;
+        sheet.stop(); startSheetY = sheet.value; startY = y;
+      }
+      trail.push({ y: y, t: performance.now() });
+      if (trail.length > 6) trail.shift();
+      let off = startSheetY + (y - startY);
+      if (off < 0) off = rubberband(off, 120);
+      sheet.jump(off);
+      return true;
+    }
+    function dragEnd() {
+      if (pending) { pending = false; return; }
+      if (!dragging) return;
+      dragging = false;
+      const v = velocityFrom(trail);
+      const off = sheet.value;
+      const flicked = Math.abs(v) > 300;
+      const closes = flicked ? v > 0 : (off + project(v)) > sheetH / 2;
+      if (closes) {
+        if (flicked) buzz(8);
+        closeAngle(v);
+      } else {
+        sheet.to(0, { velocity: v, damping: flicked ? 0.8 : 1, response: 0.3 });
+      }
+    }
+    dGrab.addEventListener('pointerdown', (e) => {
+      if (!dragStart(e.clientY)) return;
+      dGrab.setPointerCapture(e.pointerId);
+    });
+    dGrab.addEventListener('pointermove', (e) => { dragMove(e.clientY); });
+    dGrab.addEventListener('pointerup', dragEnd);
+    dGrab.addEventListener('pointercancel', dragEnd);
+    dSheet.addEventListener('touchstart', (e) => {
+      if (e.target.closest('.angle-grabber') || dSheet.scrollTop > 0 || e.touches.length !== 1) return;
+      dragStart(e.touches[0].clientY);
+    }, { passive: true });
+    dSheet.addEventListener('touchmove', (e) => {
+      if (!pending && !dragging) return;
+      const y = e.touches[0].clientY;
+      if (pending && y < startY) { pending = false; return; }   // scrolling up: let the card scroll
+      if (dragMove(y) && e.cancelable) e.preventDefault();
+    }, { passive: false });
+    dSheet.addEventListener('touchend', dragEnd);
+    dSheet.addEventListener('touchcancel', dragEnd);
 
     /* ---- key terms ---- */
     const searchEl = $('#terms-search'), clearEl = $('#terms-search-clear');

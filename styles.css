@@ -449,16 +449,25 @@ html[data-theme="dark"] .fopt:hover:not(:disabled) { background: rgba(255, 255, 
 }
 .view-switch [role="tab"]:hover { color: var(--ink); }
 .view-switch [role="tab"][aria-selected="true"] { color: var(--ink); }
-.view-switch [role="tab"]::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
-  border-radius: 2px; background: var(--violet);
-  transform: scaleX(0); transition: transform var(--base) var(--ease);
+.view-switch { position: relative; }
+.tab-ind {
+  position: absolute; left: 0; top: 0; width: 0; height: 2px !important; margin-top: -1px;
+  border-radius: 2px; background: var(--violet); pointer-events: none;
+  opacity: 0; will-change: transform, width;
 }
-.view-switch [role="tab"][aria-selected="true"]::after { transform: scaleX(1); }
+.tab-ind.is-ready { opacity: 1; }
 .view[hidden] { display: none; }
 
 /* context switch: same treatment as the current page in the nav */
-.ctx-switch { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 1.5rem; }
+.ctx-switch { position: relative; display: flex; flex-wrap: wrap; gap: 2px; margin-top: 1.5rem; }
+.ctx-switch .seg-btn { position: relative; z-index: 1; }
+.ctx-switch .seg-btn[aria-pressed="true"] { background: transparent; }
+.seg-ind {
+  position: absolute; left: 0; top: 0; width: 0; border-radius: 999px;
+  background: var(--violet-soft); pointer-events: none; z-index: 0;
+  opacity: 0; will-change: transform, width;
+}
+.seg-ind.is-ready { opacity: 1; }
 .seg-btn, .chip {
   border: 0; background: none; cursor: pointer;
   padding: .44rem .78rem; border-radius: 999px;
@@ -556,20 +565,42 @@ html[data-theme="dark"] .cgrid { --tile: color-mix(in srgb, var(--violet-soft) 7
 .cg-group, .terms-group { content-visibility: auto; contain-intrinsic-size: auto 600px; }
 
 /* angle detail: a modal card on desktop, a bottom sheet on phones */
+/* The card: the dialog is only a full-screen stage; the scrim and the card
+   inside it are what move, driven frame by frame by springs in app.js. */
 .angle-dialog {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  max-width: none; max-height: none; margin: 0; padding: 0;
+  border: 0; background: transparent; color: var(--ink); overflow: hidden;
+}
+.angle-dialog[open] { display: flex; align-items: center; justify-content: center; }
+.angle-dialog::backdrop { background: transparent; }
+.angle-scrim {
+  position: absolute; inset: 0; background: rgba(23, 21, 28, .32); opacity: 0;
+  will-change: opacity;
+}
+html[data-theme="dark"] .angle-scrim { background: rgba(0, 0, 0, .55); }
+.angle-sheet {
+  position: relative; z-index: 1;
   width: min(38rem, calc(100vw - 2 * var(--gutter)));
   max-height: min(86vh, 46rem); overflow-y: auto; overscroll-behavior: contain;
-  padding: 0; border: 1px solid var(--line-3); border-radius: var(--r-xl);
-  background: var(--surface); color: var(--ink);
+  -webkit-overflow-scrolling: touch;
+  padding: 1.375rem 1.625rem 1.125rem;
+  border: 1px solid var(--line-3); border-radius: var(--r-xl);
+  background: var(--surface);
   box-shadow: 0 30px 70px -30px rgba(var(--shadow-rgb), .55), 0 2px 10px -4px rgba(var(--shadow-rgb), .12);
+  opacity: 0; will-change: transform, opacity;
 }
-.angle-dialog::backdrop { background: rgba(23, 21, 28, .32); }
-html[data-theme="dark"] .angle-dialog::backdrop { background: rgba(0, 0, 0, .55); }
-.angle-dialog[open] { animation: dlg-in 240ms var(--ease) both; }
-.angle-dialog[open]::backdrop { animation: dlg-fade 240ms var(--ease) both; }
-@keyframes dlg-in { from { opacity: 0; transform: translateY(10px) scale(.985); } }
-@keyframes dlg-fade { from { opacity: 0; } }
-.angle-sheet { padding: 1.375rem 1.625rem 1.125rem; }
+.angle-grabber { display: none; }
+.angle-content { will-change: auto; }
+
+/* While a card is open the page underneath is frozen, so scrolling can't
+   chain into it, and the blurred bars behind the scrim stop re-blurring. */
+html:has(.angle-dialog[open]) { overflow: hidden; }
+html:has(.angle-dialog[open]) .nav,
+html:has(.angle-dialog[open]) .cg-head,
+html:has(.angle-dialog[open]) .theme-toggle {
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
 .angle-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .angle-eyebrow {
   margin: .3rem 0 0; font-size: .79rem; color: var(--muted); letter-spacing: var(--track-small); line-height: 1.45;
@@ -841,13 +872,19 @@ main { flex: 1 0 auto; animation: rise 300ms var(--ease) both; }
   .cg-cell.is-empty .cg-cname { color: var(--faint); }
   .cg-group, .terms-group { contain-intrinsic-size: auto 900px; }
 
-  .angle-dialog {
-    width: 100%; max-width: 100%; max-height: 88vh; margin: auto 0 0;
+  .angle-dialog.is-sheet[open] { align-items: flex-end; }
+  .angle-dialog.is-sheet .angle-sheet {
+    width: 100%; max-height: 88vh;
     border-radius: 1.25rem 1.25rem 0 0; border-width: 1px 0 0;
+    padding: 0 var(--gutter) calc(1rem + env(safe-area-inset-bottom));
   }
-  .angle-dialog[open] { animation-name: sheet-in; animation-duration: 300ms; }
-  @keyframes sheet-in { from { transform: translateY(40px); opacity: 0; } }
-  .angle-sheet { padding: 1.125rem var(--gutter) calc(1rem + env(safe-area-inset-bottom)); }
+  .angle-dialog.is-sheet .angle-grabber {
+    display: flex; justify-content: center; align-items: center;
+    position: sticky; top: 0; z-index: 2; height: 1.75rem;
+    margin: 0 calc(-1 * var(--gutter)) .25rem;
+    background: var(--surface); cursor: grab; touch-action: none;
+  }
+  .angle-grabber span { width: 2.25rem; height: 5px; border-radius: 999px; background: var(--line-3); }
   .angle-title { font-size: 1.18rem; }
 
   .terms-group { display: block; padding-top: 1.75rem; }
@@ -879,8 +916,6 @@ main { flex: 1 0 auto; animation: rise 300ms var(--ease) both; }
   .nav-links a:active, .nav-toggle:active { transform: none; }
   .search-clear:active { transform: translateY(-50%); }
   .item-body, .item.open .item-body { transition: none; }
-  .angle-dialog[open] { animation: dlg-fade 160ms ease both; }
-  .view-switch [role="tab"]::after { transition: none; }
   .item-body > .inner, .item.open .item-body > .inner {
     transform: none; transition: opacity 200ms ease;
   }

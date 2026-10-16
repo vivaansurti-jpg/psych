@@ -90,7 +90,10 @@
   </section>
 
   <dialog class="angle-dialog" id="angle-dialog" aria-labelledby="angle-title">
+    <div class="angle-scrim" aria-hidden="true"></div>
     <div class="angle-sheet">
+      <div class="angle-grabber" aria-hidden="true"><span></span></div>
+      <div class="angle-content" id="angle-content">
       <div class="angle-top">
         <p class="angle-eyebrow" id="angle-eyebrow"></p>
         <button type="button" class="angle-close" id="angle-close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
@@ -100,6 +103,7 @@
       <div class="angle-nav">
         <button type="button" class="text-btn" id="angle-prev">← Previous concept</button>
         <button type="button" class="text-btn" id="angle-next">Next concept →</button>
+      </div>
       </div>
     </div>
   </dialog>
