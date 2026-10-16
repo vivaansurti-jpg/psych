@@ -117,6 +117,90 @@
     return dt > 0 ? (now.y - first.y) / dt : 0;
   }
 
+  /* ---------- sliding indicator ----------
+     One highlight that travels between neighbouring choices (tabs, chips,
+     nav links) instead of blinking from one to the next. X and Y are
+     separate springs, so it stays in sync when choices wrap onto a new row,
+     and a second press mid-flight re-targets from wherever it is. */
+  function Indicator(container, className, underline) {
+    const ind = document.createElement('span');
+    ind.className = className;
+    ind.setAttribute('aria-hidden', 'true');
+    container.insertBefore(ind, container.firstChild);
+    let x = 0, y = 0, w = 0, h = 0;
+    const paint = () => {
+      ind.style.transform = 'translate3d(' + x.toFixed(2) + 'px,' + y.toFixed(2) + 'px,0)';
+      ind.style.width = w.toFixed(2) + 'px';
+      ind.style.height = h ? h.toFixed(2) + 'px' : '';
+    };
+    // X and Y as independent springs, so a jump across a wrapped row stays in sync.
+    const sx = Spring(0, (v) => { x = v; paint(); }, 0.05);
+    const sy = Spring(0, (v) => { y = v; paint(); }, 0.05);
+    const sw = Spring(0, (v) => { w = v; paint(); }, 0.05);
+    const sh = Spring(0, (v) => { h = v; paint(); }, 0.05);
+    let shown = false;
+    return {
+      hide() { shown = false; ind.classList.remove('is-ready'); },
+      move(el, instant) {
+        if (!el || !el.offsetWidth) return;     // not laid out (hidden view): measure later
+        const t = underline
+          ? { x: el.offsetLeft, y: el.offsetTop + el.offsetHeight, w: el.offsetWidth, h: 0 }
+          : { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight };
+        if (instant || !shown || reducedMotion.matches) {
+          sx.jump(t.x); sy.jump(t.y); sw.jump(t.w); sh.jump(t.h);
+          shown = true; ind.classList.add('is-ready');
+          return;
+        }
+        const o = { damping: 1, response: 0.32 };
+        sx.to(t.x, o); sy.to(t.y, o); sw.to(t.w, o); sh.to(t.h, o);
+      }
+    };
+  }
+
+  /* ---------- nav: the current-page pill slides from the page you came from ----------
+     Desktop only (the phone menu is a dropdown you have closed by the time the
+     next page loads). The link you leave is remembered for one navigation. */
+  function initNavIndicator() {
+    const links = $('.nav-links');
+    if (!links) return;
+    const anchors = $$('a', links);
+    const current = anchors.find((a) => a.getAttribute('aria-current') === 'page');
+    const ind = Indicator(links, 'nav-ind');
+    let from = null;
+    try { from = sessionStorage.getItem('psych-nav-from'); sessionStorage.removeItem('psych-nav-from'); } catch (e) {}
+
+    function place(animateFrom) {
+      if (phone.matches || !current) { ind.hide(); return; }
+      const start = animateFrom != null ? anchors[+animateFrom] : null;
+      if (start && start !== current && !reducedMotion.matches) {
+        ind.move(start, true);
+        requestAnimationFrame(() => ind.move(current));
+      } else {
+        ind.move(current, true);
+      }
+    }
+    links.classList.add('has-ind');
+    place(from);
+    // Fonts can land after the first measure: re-target (not jump), so a slide in flight carries on.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => { if (!phone.matches && current) ind.move(current); });
+    }
+    window.addEventListener('resize', () => place(null), { passive: true });
+    phone.addEventListener('change', () => place(null));
+
+    // Remember where we are leaving from; the next page slides the pill from there.
+    links.addEventListener('click', (e) => {
+      const a = e.target.closest('a');
+      if (!a || !current || phone.matches) return;
+      try { sessionStorage.setItem('psych-nav-from', String(anchors.indexOf(current))); } catch (err) {}
+    });
+    const brand = $('.brand');
+    if (brand) brand.addEventListener('click', () => {
+      if (!current || phone.matches) return;
+      try { sessionStorage.setItem('psych-nav-from', String(anchors.indexOf(current))); } catch (err) {}
+    });
+  }
+
   /* ---------- colour theme ---------- */
   function initTheme() {
     const root = document.documentElement;
@@ -813,40 +897,6 @@
       };
     }
 
-    function Indicator(container, className, underline) {
-      const ind = document.createElement('span');
-      ind.className = className;
-      ind.setAttribute('aria-hidden', 'true');
-      container.insertBefore(ind, container.firstChild);
-      let x = 0, y = 0, w = 0, h = 0;
-      const paint = () => {
-        ind.style.transform = 'translate3d(' + x.toFixed(2) + 'px,' + y.toFixed(2) + 'px,0)';
-        ind.style.width = w.toFixed(2) + 'px';
-        ind.style.height = h ? h.toFixed(2) + 'px' : '';
-      };
-      // X and Y as independent springs, so a jump across a wrapped row stays in sync.
-      const sx = Spring(0, (v) => { x = v; paint(); }, 0.05);
-      const sy = Spring(0, (v) => { y = v; paint(); }, 0.05);
-      const sw = Spring(0, (v) => { w = v; paint(); }, 0.05);
-      const sh = Spring(0, (v) => { h = v; paint(); }, 0.05);
-      let shown = false;
-      return {
-        move(el, instant) {
-          if (!el || !el.offsetWidth) return;     // not laid out (hidden view): measure later
-          const t = underline
-            ? { x: el.offsetLeft, y: el.offsetTop + el.offsetHeight, w: el.offsetWidth, h: 0 }
-            : { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight };
-          if (instant || !shown || reducedMotion.matches) {
-            sx.jump(t.x); sy.jump(t.y); sw.jump(t.w); sh.jump(t.h);
-            shown = true; ind.classList.add('is-ready');
-            return;
-          }
-          const o = { damping: 1, response: 0.32 };
-          sx.to(t.x, o); sy.to(t.y, o); sw.to(t.w, o); sh.to(t.h, o);
-        }
-      };
-    }
-
     /* ---- views (tabs) ---- */
     const tabs = { grid: $('#tab-grid'), terms: $('#tab-terms') };
     const views = { grid: $('#view-grid'), terms: $('#view-terms') };
@@ -867,6 +917,7 @@
       });
       tabInd.move(tabs[name], !prev);
       if (name === 'grid') ctxInd.move(ctxBtns.find((b) => b.dataset.ctx === ctxId), true);
+      if (name === 'terms') chipInd.move(pressedChip(), true);
       if (prev && prev !== name) arrive[name](name === 'terms' ? 1 : -1);
       if (focus) tabs[name].focus();
       store.set('psych-concepts-view', name);
@@ -947,6 +998,7 @@
     window.addEventListener('resize', () => {
       if (view) tabInd.move(tabs[view], true);
       if (view === 'grid') ctxInd.move(ctxBtns.find((b) => b.dataset.ctx === ctxId), true);
+      if (view === 'terms') chipInd.move(pressedChip(), true);
     }, { passive: true });
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(() => {
@@ -1188,6 +1240,14 @@
       CONCEPTS.map((c) => '<button type="button" class="chip" data-concept="' + esc(c.id) + '" aria-pressed="false">' +
         esc(c.name) + '<span class="chip-n">' + c.terms.length + '</span></button>').join('');
     const chips = $$('.chip', chipsEl);
+    const chipInd = Indicator(chipsEl, 'chip-ind');
+    const pressedChip = () => chips.find((b) => b.getAttribute('aria-pressed') === 'true');
+    function revealChip(b) {
+      if (b && chipsEl.scrollWidth > chipsEl.clientWidth) {
+        chipsEl.scrollTo({ left: Math.max(0, b.offsetLeft - chipsEl.clientWidth / 2 + b.offsetWidth / 2),
+                           behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+      }
+    }
 
     let groups = null;
     // Built the first time the Key terms tab is shown, so the grid paints first.
@@ -1249,6 +1309,8 @@
     function selectConcept(id) {
       selected = id;
       chips.forEach((b) => b.setAttribute('aria-pressed', b.dataset.concept === id ? 'true' : 'false'));
+      chipInd.move(pressedChip(), view !== 'terms');
+      revealChip(pressedChip());
       renderTerms();
     }
     chips.forEach((b) => b.addEventListener('click', () => selectConcept(b.dataset.concept)));
@@ -1393,6 +1455,7 @@
     initTheme();
     initScrollEdge();
     initMobileNav();
+    initNavIndicator();
     initNotes();
     initQuestions();
     initConcepts();

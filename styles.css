@@ -173,6 +173,19 @@ a, button, input, label, summary, [role="button"] { touch-action: manipulation; 
 html[data-theme="dark"] .nav-links a:hover { background: rgba(255, 255, 255, .07); }
 .nav-links a:active { transform: scale(.97); transition: transform var(--press) ease-out; }
 .nav-links a[aria-current="page"] { color: var(--violet); background: var(--violet-soft); }
+/* Desktop: the current-page pill is one element that slides between links. */
+@media (min-width: 681px) {
+  .nav-links.has-ind { position: relative; }
+  .nav-links.has-ind a { position: relative; z-index: 1; }
+  .nav-links.has-ind a[aria-current="page"] { background: transparent; }
+  .nav-links.has-ind a[aria-current="page"]:hover { background: transparent; }
+}
+.nav-ind {
+  position: absolute; left: 0; top: 0; width: 0; border-radius: 999px;
+  background: var(--violet-soft); pointer-events: none; z-index: 0;
+  opacity: 0; will-change: transform, width;
+}
+.nav-ind.is-ready { opacity: 1; }
 .nav-short { display: none; }
 .violet-text { color: var(--violet); }
 
@@ -247,6 +260,9 @@ html[data-theme="dark"] .btn-primary { color: #17151c; }
   transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
 }
 .search-field input::placeholder { color: var(--faint); }
+/* Only our own clear button: hide the browser's built-in one (it doubled up on phones). */
+.search-field input::-webkit-search-cancel-button,
+.search-field input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
 .search-field input:focus {
   outline: none; border-color: var(--violet);
   box-shadow: 0 0 0 3px var(--violet-soft);
@@ -486,6 +502,15 @@ html[data-theme="dark"] .seg-btn:hover, html[data-theme="dark"] .chip:hover { ba
   font-variant-numeric: tabular-nums;
 }
 .chip[aria-pressed="true"] .chip-n { color: inherit; opacity: .7; }
+.concept-chips { position: relative; }
+.concept-chips .chip { position: relative; z-index: 1; }
+.concept-chips .chip[aria-pressed="true"] { background: transparent; }
+.chip-ind {
+  position: absolute; left: 0; top: 0; width: 0; border-radius: 999px;
+  background: var(--violet-soft); pointer-events: none; z-index: 0;
+  opacity: 0; will-change: transform, width;
+}
+.chip-ind.is-ready { opacity: 1; }
 
 /* context switch on the left, the key on the right */
 .grid-bar {
@@ -807,6 +832,7 @@ main { flex: 1 0 auto; animation: rise 300ms var(--ease) backwards; }
   .nav-links.is-shown { visibility: visible; }
   .nav.is-open .nav-links { visibility: visible; pointer-events: auto; }
   .nav-links a { padding: .625rem .75rem; border-radius: var(--r-sm); font-size: .9rem; }
+  .nav-ind { display: none; }
   .nav-full { display: inline; }
   .nav-short { display: none; }
 
